@@ -4,67 +4,73 @@ import com.example.hrms.Enums.EmployeeStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="employee")
+@Table(name = "employee")
 public class Employee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="employee_code",unique = true,nullable = false)
+    @Column(name = "employee_code", unique = true, nullable = false)
     private String employeeCode;
 
-    @Column(name="employeeName",nullable=false)
+    @Column(name = "employee_name", nullable = false)
     private String employeeName;
 
-    @Column(name="email",unique = true,nullable = false)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name="password",nullable = false)
-    private String password;
-
-    @Column(name="phone",nullable = false)
+    @Column(name = "phone", nullable = false)
     private String phone;
 
-    @Column(name="gender",nullable = false)
+    @Column(name = "gender", nullable = false)
     private String gender;
 
-    @Column(name = "dateOfBirth",nullable = false)
-    private String dateOfBirth;
+    @Column(name = "date_of_birth", nullable = false)
+    private LocalDate dateOfBirth;
 
-    @Column(name = "joining_date",nullable = false)
-    private String joiningDate;
+    @Column(name = "joining_date", nullable = false)
+    private LocalDate joiningDate;
 
-    @Column(name="employeeStatus",nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employee_status", nullable = false)
     private EmployeeStatus employeeStatus;
 
-    @Column(name = "bacnkAccountNumber",nullable = false)
+    @Column(name = "bank_account_number", nullable = false)
     private String bankAccountNumber;
 
     @Column(name = "ifsc")
     private String ifsc;
 
-    @Column(name="departmentId")
-    private Long departmentId;
+    @ManyToOne
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
-    @Column(name="designationId")
-    private Long designationId;
+    @ManyToOne
+    @JoinColumn(name = "designation_id", nullable = false)
+    private Designation designation;
 
-    @Column(name = "managerId")
-    private Long managerId;
-    
+    @ManyToOne
+    @JoinColumn(name = "manager_id", nullable = true)
+    private Employee manager;
 }
