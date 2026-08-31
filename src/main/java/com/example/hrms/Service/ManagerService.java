@@ -1,5 +1,9 @@
 package com.example.hrms.Service;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -7,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.hrms.Dto.EmployeeRequestDto;
 import com.example.hrms.Dto.EmployeeResponseDto;
+import com.example.hrms.Dto.ManagerRequestDto;
+import com.example.hrms.Dto.ManagerResponseDto;
 import com.example.hrms.Entity.Department;
 import com.example.hrms.Entity.Designation;
 import com.example.hrms.Entity.Employee;
@@ -42,7 +48,8 @@ public class ManagerService {
         Employee managerEmployee = null;
         if (managerEmployeeId != null) {
             managerEmployee = employeerepo.findById(managerEmployeeId)
-                    .orElseThrow(() -> new RuntimeException("Manager employee profile not found with id: " + managerEmployeeId));
+                    .orElseThrow(() -> new RuntimeException(
+                            "Manager employee profile not found with id: " + managerEmployeeId));
         }
 
         if (employeerepo.existsByEmployeeCode(request.getEmployeeCode())) {
@@ -105,5 +112,97 @@ public class ManagerService {
                 .managerName(managerEmployee != null ? managerEmployee.getEmployeeName() : null)
                 .build();
     }
-}
 
+    public List<ManagerResponseDto> getAllManagers() {
+        List<Employee> employees = employeerepo.findByRole(Role.MANAGER);
+        return employees.stream().map(this::toManagerResponseDto).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ManagerResponseDto updateManager(Long id, ManagerRequestDto request) {
+        Employee employee = employeerepo.findById(id).orElseThrow(() -> new RuntimeException("Manager not found"));
+        Designation designation = request.getDesignationId() != null
+                ? designationrepo.findById(request.getDesignationId())
+                        .orElseThrow(() -> new RuntimeException("Designation not found"))
+                : employee.getDesignation();
+        Department department = request.getDepartmentId() != null
+                ? departmentrepo.findById(request.getDepartmentId())
+                        .orElseThrow(() -> new RuntimeException("Department not found"))
+                : employee.getDepartment();
+
+        employee.setEmployeeName(request.getEmployeeName());
+        employee.setPhone(request.getPhone());
+        employee.setGender(request.getGender());
+        employee.setDateOfBirth(request.getDateOfBirth());
+        // employee.setJoiningDate(request.getJoiningDate());
+        employee.setBankAccountNumber(request.getBankAccountNumber());
+        employee.setIfsc(request.getIfsc());
+        employee.setDepartment(department);
+        employee.setDesignation(designation);
+        employee.setManager(request.getManagerId() != null
+                ? employeerepo.findById(request.getManagerId())
+                        .orElseThrow(() -> new RuntimeException("Manager not found"))
+                : employee.getManager());
+        Employee updated = employeerepo.save(employee);
+        return toManagerResponseDto(updated);
+
+    }
+
+    public List<ManagerResponseDto> getManagers() {
+        List<User> managerUsers = userrepo.findByRole(Role.MANAGER);
+        return managerUsers.stream()
+                .map(user -> user.getEmployeeId() != null ? employeerepo.findById(user.getEmployeeId()).orElse(null)
+                        : null)
+                .filter(Objects::nonNull)
+                .map(this::toManagerResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<EmployeeResponseDto> getmanagerTeam(String managername) {
+        List<Employee> employees = employeerepo.findByManager_EmployeeName(managername);
+        return employees.stream().map(this::toEmployeeResponseDto).collect(Collectors.toList());
+    }
+
+    public EmployeeResponseDto toEmployeeResponseDto(Employee employee) {
+        return EmployeeResponseDto.builder()
+                .id(employee.getId())
+                .employeeCode(employee.getEmployeeCode())
+                .employeeName(employee.getEmployeeName())
+                .email(employee.getEmail())
+                .phone(employee.getPhone())
+                .gender(employee.getGender())
+                .dateOfBirth(employee.getDateOfBirth())
+                .joiningDate(employee.getJoiningDate())
+                .employeeStatus(employee.getEmployeeStatus())
+                .bankAccountNumber(employee.getBankAccountNumber())
+                .ifsc(employee.getIfsc())
+                .departmentName(employee.getDepartment() != null ? employee.getDepartment().getName() : null)
+                .designationName(employee.getDesignation() != null ? employee.getDesignation().getTitle() : null)
+                .managerName(employee.getManager() != null ? employee.getManager().getEmployeeName() : null)
+                .build();
+    }
+
+    public ManagerResponseDto toManagerResponseDto(Employee employee) {
+        Role role = userrepo.findByEmail(employee.getEmail())
+                .map(User::getRole)
+                .orElse(null);
+
+        return ManagerResponseDto.builder()
+                .id(employee.getId())
+                .employeeCode(employee.getEmployeeCode())
+                .employeeName(employee.getEmployeeName())
+                .email(employee.getEmail())
+                .phone(employee.getPhone())
+                .gender(employee.getGender())
+                .dateOfBirth(employee.getDateOfBirth())
+                .joiningDate(employee.getJoiningDate())
+                .employeeStatus(employee.getEmployeeStatus())
+                .bankAccountNumber(employee.getBankAccountNumber())
+                .ifsc(employee.getIfsc())
+                .departmentId(employee.getDepartment() != null ? employee.getDepartment().getId() : null)
+                .designationId(employee.getDesignation() != null ? employee.getDesignation().getId() : null)
+                .managerId(employee.getManager() != null ? employee.getManager().getId() : null)
+                .role(role)
+                .build();
+    }
+}

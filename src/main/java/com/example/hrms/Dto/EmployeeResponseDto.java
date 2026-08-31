@@ -2,6 +2,8 @@ package com.example.hrms.Dto;
 
 import java.time.LocalDate;
 
+import com.example.hrms.Enums.EmployeeStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +30,8 @@ public class EmployeeResponseDto {
     private LocalDate dateOfBirth;
 
     private LocalDate joiningDate;
+
+    private EmployeeStatus employeeStatus;
 
     private String bankAccountNumber;
 

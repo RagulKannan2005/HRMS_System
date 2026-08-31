@@ -53,4 +53,6 @@ public class ManagerRequestDto {
 
     @NotNull(message = "Designation ID cannot be empty")
     private Long designationId;
+
+    private Long managerId;
 }
