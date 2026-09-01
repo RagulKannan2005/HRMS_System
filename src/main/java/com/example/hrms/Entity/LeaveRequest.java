@@ -1,6 +1,10 @@
 package com.example.hrms.Entity;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.example.hrms.Enums.LeaveType;
+import com.example.hrms.Enums.LeaveStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,28 +16,20 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-    name = "leave_balance",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            columnNames = {"employee_id", "leave_type", "year"}
-        )
-    }
-)
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LeaveBalance {
-
+@Builder
+@Table(name = "leave_request")
+public class LeaveRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,15 +39,35 @@ public class LeaveBalance {
     private Employee employee;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "leave_type", nullable = false)
+    @Column(nullable = false)
     private LeaveType leaveType;
 
     @Column(nullable = false)
-    private Integer totalDays;
+    private LocalDate fromDate;
 
     @Column(nullable = false)
-    private Integer usedDays;
+    private LocalDate toDate;
 
     @Column(nullable = false)
-    private Integer year;
+    private Integer numberOfDays;
+
+    @Column(nullable = false)
+    private String reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LeaveStatus status;
+
+    private Long approvedBy;
+
+    @Column(nullable = false)
+    private LocalDateTime appliedOn;
+
+    @PrePersist
+    protected void onCreate() {
+        appliedOn = LocalDateTime.now();
+    }
+    
+    
+
 }
