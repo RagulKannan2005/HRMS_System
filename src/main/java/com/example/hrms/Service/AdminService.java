@@ -1,7 +1,11 @@
 package com.example.hrms.Service;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,17 +13,25 @@ import com.example.hrms.Dto.DepartmentRequestDto;
 import com.example.hrms.Dto.DepartmentResponseDto;
 import com.example.hrms.Dto.DesignationRequestDto;
 import com.example.hrms.Dto.DesignationResponseDto;
+import com.example.hrms.Dto.LeaveRequestDto;
+import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
 import com.example.hrms.Entity.Department;
 import com.example.hrms.Entity.Designation;
 import com.example.hrms.Entity.Employee;
+import com.example.hrms.Entity.LeaveBalance;
+import com.example.hrms.Entity.LeaveRequest;
 import com.example.hrms.Entity.User;
 import com.example.hrms.Enums.EmployeeStatus;
+import com.example.hrms.Enums.LeaveStatus;
+import com.example.hrms.Enums.LeaveType;
 import com.example.hrms.Enums.Role;
 import com.example.hrms.Repository.DepartmentRepository;
 import com.example.hrms.Repository.DesignationRepository;
 import com.example.hrms.Repository.EmployeeRepository;
+import com.example.hrms.Repository.LeaveBalanceRepository;
+import com.example.hrms.Repository.LeaveRequestRepository;
 import com.example.hrms.Repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -34,6 +46,8 @@ public class AdminService {
     private final DepartmentRepository deptrepo;
     private final DesignationRepository designationrepo;
     private final PasswordEncoder passwordencoder;
+    private final LeaveBalanceRepository leaveBalanceRepo;
+    private final LeaveRequestRepository leaveRequestRepo;
 
     @Transactional
     public ManagerResponseDto createManager(ManagerRequestDto request) {
@@ -72,6 +86,16 @@ public class AdminService {
                 .build();
 
         Employee savedemployee = employeerepo.save(employee);
+        for (LeaveType leaveType : LeaveType.values()) {
+            LeaveBalance balance = LeaveBalance.builder()
+                    .employee(savedemployee)
+                    .leaveType(leaveType)
+                    .totalDays(leaveType.getAnnualLimit())
+                    .usedDays(0)
+                    .year(LocalDate.now().getYear())
+                    .build();
+            leaveBalanceRepo.save(balance);
+        }
 
         User user = User.builder()
                 .email(request.getEmail())
@@ -175,4 +199,79 @@ public class AdminService {
                 .build();
     }
 
+    @Transactional
+    public LeaveResponseDto approveManagersLeave(Long leaveRequestId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+
+        LeaveRequest leaveRequest = leaveRequestRepo.findById(leaveRequestId)
+                .orElseThrow(() -> new RuntimeException("Leave request is not found"));
+
+        if (leaveRequest.getStatus() != LeaveStatus.PENDING) {
+            throw new RuntimeException("Only pending Leave Request can be approved");
+        }
+
+        Employee employee = leaveRequest.getEmployee();
+        int year = leaveRequest.getFromDate().getYear();
+
+        LeaveBalance balance = leaveBalanceRepo
+                .findByEmployeeId_AndLeaveTypeAndYear(employee.getId(), leaveRequest.getLeaveType(), year)
+                .orElseThrow(() -> new RuntimeException("Leave balance not found"));
+
+        int remainingDays = balance.getTotalDays() - balance.getUsedDays();
+
+        if (leaveRequest.getNumberOfDays() > remainingDays) {
+            throw new RuntimeException("Insufficient leave balance");
+        }
+
+        balance.setUsedDays(balance.getUsedDays() + leaveRequest.getNumberOfDays());
+        leaveBalanceRepo.save(balance);
+
+        leaveRequest.setStatus(LeaveStatus.APPROVED);
+        leaveRequest.setApprovedBy(user.getEmployeeId() != null ? user.getEmployeeId() : user.getId());
+        LeaveRequest saved = leaveRequestRepo.save(leaveRequest);
+
+        return toLeaveResponseDto(saved);
+    }
+
+    @Transactional
+    public LeaveResponseDto rejectManagersLeave(Long leaveRequestId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+
+        LeaveRequest leaveRequest = leaveRequestRepo.findById(leaveRequestId)
+                .orElseThrow(() -> new RuntimeException("Leave request is not found"));
+        if (leaveRequest.getStatus() != LeaveStatus.PENDING) {
+            throw new RuntimeException("Only pending Leave Request can be rejected");
+        }
+
+        leaveRequest.setStatus(LeaveStatus.REJECTED);
+        leaveRequest.setApprovedBy(user.getEmployeeId() != null ? user.getEmployeeId() : user.getId());
+        LeaveRequest saved = leaveRequestRepo.save(leaveRequest);
+
+        return toLeaveResponseDto(saved);
+    }
+
+    public List<LeaveResponseDto> getPendingLeaveRequests() {
+        List<LeaveRequest> pendingRequests = leaveRequestRepo.findByStatus(LeaveStatus.PENDING);
+        return pendingRequests.stream()
+                .map(this::toLeaveResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    private LeaveResponseDto toLeaveResponseDto(LeaveRequest leaveRequest) {
+        return LeaveResponseDto.builder()
+                .id(leaveRequest.getId())
+                .employeeId(leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getId() : null)
+                .employeeName(leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getEmployeeName() : null)
+                .leaveType(leaveRequest.getLeaveType())
+                .fromDate(leaveRequest.getFromDate())
+                .toDate(leaveRequest.getToDate())
+                .numberOfDays(leaveRequest.getNumberOfDays())
+                .reason(leaveRequest.getReason())
+                .status(leaveRequest.getStatus())
+                .approvedBy(leaveRequest.getApprovedBy())
+                .appliedOn(leaveRequest.getAppliedOn())
+                .build();
+    }
 }

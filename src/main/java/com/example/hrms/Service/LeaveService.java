@@ -90,6 +90,72 @@ public class LeaveService {
 
     }
 
+    @Transactional
+    public LeaveResponseDto leavecancelByEmployee(Long leaveRequestId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof User)) {
+            throw new RuntimeException("Invalid user session");
+        }
+
+        User user = (User) authentication.getPrincipal();
+        Long employeeId = user.getEmployeeId();
+
+        LeaveRequest leaveRequest = leaveRequestrepo.findById(leaveRequestId)
+                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+
+        if (employeeId == null || !leaveRequest.getEmployee().getId().equals(employeeId)) {
+            throw new RuntimeException("You can only cancel your own leave request");
+        }
+
+        if (leaveRequest.getStatus() == LeaveStatus.CANCELLED) {
+            throw new RuntimeException("Leave request is already cancelled");
+        }
+
+        if (leaveRequest.getStatus() == LeaveStatus.REJECTED) {
+            throw new RuntimeException("Cannot cancel a rejected leave request");
+        }
+
+        
+        if (leaveRequest.getStatus() == LeaveStatus.APPROVED) {
+            int year = leaveRequest.getFromDate().getYear();
+            LeaveBalance balance = leaveBalancerepo
+                    .findByEmployeeId_AndLeaveTypeAndYear(employeeId, leaveRequest.getLeaveType(), year)
+                    .orElse(null);
+
+            if (balance != null) {
+                int newUsedDays = Math.max(0, balance.getUsedDays() - leaveRequest.getNumberOfDays());
+                balance.setUsedDays(newUsedDays);
+                leaveBalancerepo.save(balance);
+            }
+        }
+
+        leaveRequest.setStatus(LeaveStatus.CANCELLED);
+        LeaveRequest savedRequest = leaveRequestrepo.save(leaveRequest);
+
+        return mapLeaveRequestToResponseDto(savedRequest);
+    }
+
+    public List<LeaveResponseDto> getMyLeaves() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof User)) {
+            throw new RuntimeException("Invalid user session");
+        }
+
+        User user = (User) authentication.getPrincipal();
+        Long employeeId = user.getEmployeeId();
+
+        if (employeeId == null) {
+            throw new RuntimeException("No employee profile associated with current user");
+        }
+
+        List<LeaveRequest> leaveRequests = leaveRequestrepo.findByEmployee_Id(employeeId);
+        return leaveRequests.stream()
+                .map(this::mapLeaveRequestToResponseDto)
+                .collect(Collectors.toList());
+    }
+
     public List<LeaveResponseDto> getLeavesByEmployeeId(Long id) {
         List<LeaveRequest> leaveRequests = leaveRequestrepo.findByEmployee_Id(id);
         return leaveRequests.stream()
@@ -99,7 +165,7 @@ public class LeaveService {
 
     public List<LeaveResponseDto> getLeavesBystatusandEmplyeeId(Long id, String status) {
         LeaveStatus leaveStatus = LeaveStatus.valueOf(status.toUpperCase());
-        List<LeaveRequest> leaveRequests = leaveRequestrepo.findByEmployeeId_AndStatus(id, leaveStatus);
+        List<LeaveRequest> leaveRequests = leaveRequestrepo.findByEmployee_IdAndStatus(id, leaveStatus);
         return leaveRequests.stream()
                 .map(this::mapLeaveRequestToResponseDto)
                 .collect(Collectors.toList());

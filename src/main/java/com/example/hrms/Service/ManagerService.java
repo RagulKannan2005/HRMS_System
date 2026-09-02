@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.hrms.Dto.EmployeeRequestDto;
 import com.example.hrms.Dto.EmployeeResponseDto;
+import com.example.hrms.Dto.LeaveBalanceResponseDto;
 import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
@@ -211,6 +212,10 @@ public class ManagerService {
                                                                         + managerEmployeeId));
                 }
                 Employee employee = leaveRequest.getEmployee();
+                if (managerEmployeeId != null && employee.getId().equals(managerEmployeeId)) {
+                        throw new RuntimeException("Managers cannot approve their own leave requests. Only Admin can approve a manager's leave request.");
+                }
+
                 int year = leaveRequest.getFromDate().getYear();
                 LeaveBalance balance = leaveBalanceRepo
                                 .findByEmployeeId_AndLeaveTypeAndYear(employee.getId(), leaveRequest.getLeaveType(),
@@ -232,11 +237,56 @@ public class ManagerService {
 
         }
 
+        @Transactional
+        public LeaveResponseDto rejectEmployyeLeave(Long leaverequestId){
+                Authentication authenticaiton=SecurityContextHolder.getContext().getAuthentication();
+                User user=(User) authenticaiton.getPrincipal();
+
+                LeaveRequest leaveRequest=leaveRequestrepo.findById(leaverequestId).orElseThrow(()->new RuntimeException("Leave Request id is not found"));
+                if(leaveRequest.getStatus()!=LeaveStatus.PENDING){
+                        throw new RuntimeException("Only Pending Leave Request can be rejected");
+                }   
+                Employee employee = leaveRequest.getEmployee();
+                Long managerEmployeeId = user.getEmployeeId();
+                if (managerEmployeeId != null && employee.getId().equals(managerEmployeeId)) {
+                        throw new RuntimeException("Managers cannot reject their own leave requests. Only Admin can manage a manager's leave request.");
+                }
+
+                leaveRequest.setStatus(LeaveStatus.REJECTED);
+                leaveRequest.setApprovedBy(user.getEmployeeId()!=null?user.getEmployeeId():user.getId());
+                LeaveRequest saved=leaveRequestrepo.save(leaveRequest);
+                return toLeaveResponseDto(saved);
+        }
+
+        public List<LeaveBalanceResponseDto> getleavebalance(Long employeeid) {
+                if (!employeerepo.existsById(employeeid)) {
+                        throw new RuntimeException("Employee is not found");
+                }
+                List<LeaveBalance> balances = leaveBalanceRepo.findByEmployee_Id(employeeid);
+                return balances.stream().map(this::toLeaveBalanceResponseDto).collect(Collectors.toList());
+        }
+
+        public LeaveBalanceResponseDto toLeaveBalanceResponseDto(LeaveBalance balance) {
+                int remainingDays = (balance.getTotalDays() != null ? balance.getTotalDays() : 0)
+                                - (balance.getUsedDays() != null ? balance.getUsedDays() : 0);
+                return LeaveBalanceResponseDto.builder()
+                                .id(balance.getId())
+                                .leaveType(balance.getLeaveType())
+                                .totalDays(balance.getTotalDays())
+                                .usedDays(balance.getUsedDays())
+                                .year(balance.getYear())
+                                .remainingDays(remainingDays)
+                                .build();
+        }
+
         LeaveResponseDto toLeaveResponseDto(LeaveRequest leaveRequest) {
                 return LeaveResponseDto.builder()
                                 .id(leaveRequest.getId())
-                                .employeeId(leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getId() : null)
-                                .employeeName(leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getEmployeeName() : null)
+                                .employeeId(leaveRequest.getEmployee() != null ? leaveRequest.getEmployee().getId()
+                                                : null)
+                                .employeeName(leaveRequest.getEmployee() != null
+                                                ? leaveRequest.getEmployee().getEmployeeName()
+                                                : null)
                                 .leaveType(leaveRequest.getLeaveType())
                                 .fromDate(leaveRequest.getFromDate())
                                 .toDate(leaveRequest.getToDate())

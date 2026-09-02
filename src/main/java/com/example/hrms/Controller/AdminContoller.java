@@ -16,6 +16,7 @@ import com.example.hrms.Dto.DepartmentRequestDto;
 import com.example.hrms.Dto.DepartmentResponseDto;
 import com.example.hrms.Dto.DesignationRequestDto;
 import com.example.hrms.Dto.DesignationResponseDto;
+import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
 // import com.example.hrms.Entity.Department;
@@ -83,6 +84,24 @@ public class AdminContoller {
     @GetMapping("/departments")
     public ResponseEntity<List<DepartmentResponseDto>> getDepartments() {
         return ResponseEntity.ok(adminService.getAllDepartments());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/approve-leave/{leaveRequestId}")
+    public ResponseEntity<LeaveResponseDto> approveLeave(@PathVariable Long leaveRequestId) {
+        return ResponseEntity.ok(adminService.approveManagersLeave(leaveRequestId));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/reject-leave/{leaveRequestId}")
+    public ResponseEntity<LeaveResponseDto> rejectLeave(@PathVariable Long leaveRequestId) {
+        return ResponseEntity.ok(adminService.rejectManagersLeave(leaveRequestId));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/pending-leaves")
+    public ResponseEntity<List<LeaveResponseDto>> getPendingLeaves() {
+        return ResponseEntity.ok(adminService.getPendingLeaveRequests());
     }
 
 }

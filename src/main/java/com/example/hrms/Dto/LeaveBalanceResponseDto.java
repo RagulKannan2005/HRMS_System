@@ -18,14 +18,5 @@ public class LeaveBalanceResponseDto {
     private Integer totalDays;
     private Integer usedDays;
     private Integer year;
-
-    @Builder.Default
-    private Integer remainingDays = 0;
-
-    public Integer getRemainingDays() {
-        if (totalDays == null || usedDays == null) {
-            return 0;
-        }
-        return totalDays - usedDays;
-    }
+    private Integer remainingDays;
 }

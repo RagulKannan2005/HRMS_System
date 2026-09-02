@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.hrms.Dto.EmployeeRequestDto;
 import com.example.hrms.Dto.EmployeeResponseDto;
+import com.example.hrms.Dto.LeaveBalanceResponseDto;
 import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
@@ -53,6 +54,18 @@ public class ManagerController {
     @PutMapping("/{id}/approve-leave")
     public ResponseEntity<LeaveResponseDto> approveleave(@PathVariable Long id){
         return ResponseEntity.ok(managerservice.approveLeave(id));
+    }
+
+    @PreAuthorize("hasRole('MANAGER')")
+    @GetMapping("/my-leave-balance/{employeeid}")
+    public ResponseEntity<List<LeaveBalanceResponseDto>> getleavebalance(@PathVariable Long employeeid){
+        return ResponseEntity.ok(managerservice.getleavebalance(employeeid));
+    }
+
+    @PreAuthorize("hasRole('MANAGER')")
+    @PutMapping("/{id}/reject-leave")
+    public ResponseEntity<LeaveResponseDto> rejectleave(@PathVariable Long id){
+        return ResponseEntity.ok(managerservice.rejectEmployyeLeave(id));
     }
     
 

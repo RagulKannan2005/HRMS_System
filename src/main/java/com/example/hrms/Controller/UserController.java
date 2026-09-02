@@ -3,6 +3,7 @@ package com.example.hrms.Controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,12 +23,14 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
     private final UserService userservice;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/addUser")
     public ResponseEntity<UserResponseDto> createusers(@RequestBody @Valid UserRequesrDto dto){
         UserResponseDto user=userservice.createuser(dto);
         return ResponseEntity.ok(user);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/getAllUsers")
     public ResponseEntity<List<UserResponseDto>> getallusers(){
     List<UserResponseDto> list=userservice.getUsers();
