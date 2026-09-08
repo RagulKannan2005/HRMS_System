@@ -16,23 +16,30 @@ import com.example.hrms.Dto.LeaveBalanceResponseDto;
 import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
+import com.example.hrms.Entity.Attendance;
 import com.example.hrms.Entity.Department;
 import com.example.hrms.Entity.Designation;
 import com.example.hrms.Entity.Employee;
+import com.example.hrms.Entity.EmployeeSalary;
 import com.example.hrms.Entity.LeaveBalance;
 import com.example.hrms.Entity.LeaveRequest;
+// import com.example.hrms.Entity.Salary;
 import com.example.hrms.Entity.User;
+import com.example.hrms.Enums.AttendanceStatus;
 import com.example.hrms.Enums.EmployeeStatus;
 import com.example.hrms.Enums.LeaveStatus;
 import com.example.hrms.Enums.LeaveType;
 import com.example.hrms.Enums.Role;
+import com.example.hrms.Repository.AttendanceRepository;
 import com.example.hrms.Repository.DepartmentRepository;
 import com.example.hrms.Repository.DesignationRepository;
 import com.example.hrms.Repository.EmployeeRepository;
 import com.example.hrms.Repository.LeaveBalanceRepository;
 import com.example.hrms.Repository.LeaveRequestRepository;
+import com.example.hrms.Repository.SalaryRepository;
 import com.example.hrms.Repository.UserRepository;
 
+import jakarta.el.ELManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -46,6 +53,8 @@ public class ManagerService {
         private final PasswordEncoder passwordencoder;
         private final LeaveBalanceRepository leaveBalanceRepo;
         private final LeaveRequestRepository leaveRequestrepo;
+        private final AttendanceRepository attendanceRepo;
+        private final SalaryRepository employeeSalaryrepo;
 
         @Transactional
         public EmployeeResponseDto createEmployee(EmployeeRequestDto request) {
@@ -97,6 +106,18 @@ public class ManagerService {
 
                 Employee savedEmployee = employeerepo.save(employee);
 
+                EmployeeSalary salary = EmployeeSalary.builder()
+                                .employee(savedEmployee)
+                                .basicSalary(request.getBasicSalary())
+                                .hra(request.getHra())
+                                .otherAllowance(request.getOtherAllowance())
+                                .taxPercent(request.getTaxPercent())
+                                .pfPercent(request.getPfPercent())
+                                .effectiveFrom(request.getSalaryEffectiveFrom())
+                                .build();
+
+                employeeSalaryrepo.save(salary);
+
                 for (LeaveType leaveType : LeaveType.values()) {
                         LeaveBalance balance = LeaveBalance.builder()
                                         .employee(savedEmployee)
@@ -133,6 +154,12 @@ public class ManagerService {
                                 .departmentName(department.getName())
                                 .designationName(designation.getTitle())
                                 .managerName(managerEmployee != null ? managerEmployee.getEmployeeName() : null)
+                                .basicSalary(salary.getBasicSalary())
+                                .hra(salary.getHra())
+                                .otherAllowance(salary.getOtherAllowance())
+                                .taxPercent(salary.getTaxPercent())
+                                .pfPercent(salary.getPfPercent())
+                                .salaryEffectiveFrom(salary.getEffectiveFrom())
                                 .build();
         }
 
@@ -213,7 +240,8 @@ public class ManagerService {
                 }
                 Employee employee = leaveRequest.getEmployee();
                 if (managerEmployeeId != null && employee.getId().equals(managerEmployeeId)) {
-                        throw new RuntimeException("Managers cannot approve their own leave requests. Only Admin can approve a manager's leave request.");
+                        throw new RuntimeException(
+                                        "Managers cannot approve their own leave requests. Only Admin can approve a manager's leave request.");
                 }
 
                 int year = leaveRequest.getFromDate().getYear();
@@ -233,28 +261,46 @@ public class ManagerService {
                 leaveRequest.setStatus(LeaveStatus.APPROVED);
                 leaveRequest.setApprovedBy(managerEmployeeId);
                 leaveRequestrepo.save(leaveRequest);
+
+                // Pre-create ON_LEAVE Attendance records for each day of approved leave
+                LocalDate currentDate = leaveRequest.getFromDate();
+                while (!currentDate.isAfter(leaveRequest.getToDate())) {
+                        if (!attendanceRepo.existsByEmployee_IdAndDate(employee.getId(), currentDate)) {
+                                Attendance attendance = Attendance.builder()
+                                                .employee(employee)
+                                                .date(currentDate)
+                                                .status(AttendanceStatus.ON_LEAVE)
+                                                .remarks("Approved Leave (" + leaveRequest.getLeaveType() + ")")
+                                                .build();
+                                attendanceRepo.save(attendance);
+                        }
+                        currentDate = currentDate.plusDays(1);
+                }
+
                 return toLeaveResponseDto(leaveRequest);
 
         }
 
         @Transactional
-        public LeaveResponseDto rejectEmployyeLeave(Long leaverequestId){
-                Authentication authenticaiton=SecurityContextHolder.getContext().getAuthentication();
-                User user=(User) authenticaiton.getPrincipal();
+        public LeaveResponseDto rejectEmployyeLeave(Long leaverequestId) {
+                Authentication authenticaiton = SecurityContextHolder.getContext().getAuthentication();
+                User user = (User) authenticaiton.getPrincipal();
 
-                LeaveRequest leaveRequest=leaveRequestrepo.findById(leaverequestId).orElseThrow(()->new RuntimeException("Leave Request id is not found"));
-                if(leaveRequest.getStatus()!=LeaveStatus.PENDING){
+                LeaveRequest leaveRequest = leaveRequestrepo.findById(leaverequestId)
+                                .orElseThrow(() -> new RuntimeException("Leave Request id is not found"));
+                if (leaveRequest.getStatus() != LeaveStatus.PENDING) {
                         throw new RuntimeException("Only Pending Leave Request can be rejected");
-                }   
+                }
                 Employee employee = leaveRequest.getEmployee();
                 Long managerEmployeeId = user.getEmployeeId();
                 if (managerEmployeeId != null && employee.getId().equals(managerEmployeeId)) {
-                        throw new RuntimeException("Managers cannot reject their own leave requests. Only Admin can manage a manager's leave request.");
+                        throw new RuntimeException(
+                                        "Managers cannot reject their own leave requests. Only Admin can manage a manager's leave request.");
                 }
 
                 leaveRequest.setStatus(LeaveStatus.REJECTED);
-                leaveRequest.setApprovedBy(user.getEmployeeId()!=null?user.getEmployeeId():user.getId());
-                LeaveRequest saved=leaveRequestrepo.save(leaveRequest);
+                leaveRequest.setApprovedBy(user.getEmployeeId() != null ? user.getEmployeeId() : user.getId());
+                LeaveRequest saved = leaveRequestrepo.save(leaveRequest);
                 return toLeaveResponseDto(saved);
         }
 

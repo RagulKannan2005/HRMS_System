@@ -1,12 +1,9 @@
 package com.example.hrms.Dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.example.hrms.Enums.EmployeeStatus;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,4 +37,13 @@ public class EmployeeRequestDto {
     private Long departmentId;
 
     private Long designationId;
+
+    //salary details
+    private BigDecimal basicSalary;
+    private BigDecimal hra;
+    private BigDecimal otherAllowance;
+    private BigDecimal taxPercent;
+    private BigDecimal pfPercent;
+    private LocalDate salaryEffectiveFrom;
+
 }

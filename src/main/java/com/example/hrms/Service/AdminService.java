@@ -17,16 +17,19 @@ import com.example.hrms.Dto.LeaveRequestDto;
 import com.example.hrms.Dto.LeaveResponseDto;
 import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
+import com.example.hrms.Entity.Attendance;
 import com.example.hrms.Entity.Department;
 import com.example.hrms.Entity.Designation;
 import com.example.hrms.Entity.Employee;
 import com.example.hrms.Entity.LeaveBalance;
 import com.example.hrms.Entity.LeaveRequest;
 import com.example.hrms.Entity.User;
+import com.example.hrms.Enums.AttendanceStatus;
 import com.example.hrms.Enums.EmployeeStatus;
 import com.example.hrms.Enums.LeaveStatus;
 import com.example.hrms.Enums.LeaveType;
 import com.example.hrms.Enums.Role;
+import com.example.hrms.Repository.AttendanceRepository;
 import com.example.hrms.Repository.DepartmentRepository;
 import com.example.hrms.Repository.DesignationRepository;
 import com.example.hrms.Repository.EmployeeRepository;
@@ -48,6 +51,7 @@ public class AdminService {
     private final PasswordEncoder passwordencoder;
     private final LeaveBalanceRepository leaveBalanceRepo;
     private final LeaveRequestRepository leaveRequestRepo;
+    private final AttendanceRepository attendanceRepo;
 
     @Transactional
     public ManagerResponseDto createManager(ManagerRequestDto request) {
@@ -230,6 +234,21 @@ public class AdminService {
         leaveRequest.setStatus(LeaveStatus.APPROVED);
         leaveRequest.setApprovedBy(user.getEmployeeId() != null ? user.getEmployeeId() : user.getId());
         LeaveRequest saved = leaveRequestRepo.save(leaveRequest);
+
+        // Pre-create ON_LEAVE Attendance records for each day of approved leave
+        LocalDate currentDate = leaveRequest.getFromDate();
+        while (!currentDate.isAfter(leaveRequest.getToDate())) {
+            if (!attendanceRepo.existsByEmployee_IdAndDate(employee.getId(), currentDate)) {
+                Attendance attendance = Attendance.builder()
+                        .employee(employee)
+                        .date(currentDate)
+                        .status(AttendanceStatus.ON_LEAVE)
+                        .remarks("Approved Leave (" + leaveRequest.getLeaveType() + ")")
+                        .build();
+                attendanceRepo.save(attendance);
+            }
+            currentDate = currentDate.plusDays(1);
+        }
 
         return toLeaveResponseDto(saved);
     }

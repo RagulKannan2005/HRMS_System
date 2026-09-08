@@ -16,6 +16,7 @@ import com.example.hrms.Entity.LeaveBalance;
 import com.example.hrms.Entity.LeaveRequest;
 import com.example.hrms.Entity.User;
 import com.example.hrms.Enums.LeaveStatus;
+import com.example.hrms.Repository.AttendanceRepository;
 import com.example.hrms.Repository.EmployeeRepository;
 import com.example.hrms.Repository.LeaveBalanceRepository;
 import com.example.hrms.Repository.LeaveRequestRepository;
@@ -29,6 +30,7 @@ public class LeaveService {
     private final LeaveBalanceRepository leaveBalancerepo;
     private final LeaveRequestRepository leaveRequestrepo;
     private final EmployeeRepository employeeRepo;
+    private final AttendanceRepository attendanceRepository;
 
     @Transactional
     public LeaveResponseDto applyLeave(LeaveRequestDto dto) {
@@ -52,6 +54,13 @@ public class LeaveService {
 
         if (dto.getFromDate().isAfter(dto.getToDate())) {
             throw new RuntimeException("From date cannnot be after To date");
+        }
+
+        boolean overlappingLeave = leaveRequestrepo.existsOverlappingLeave(
+                employeeId, dto.getFromDate(), dto.getToDate(),
+                List.of(LeaveStatus.PENDING, LeaveStatus.APPROVED));
+        if (overlappingLeave) {
+            throw new RuntimeException("You already have an overlapping leave request for these dates");
         }
         int numberOfDays = (int) ChronoUnit.DAYS.between(dto.getFromDate(), dto.getToDate()) + 1;
         int year = dto.getFromDate().getYear();
@@ -135,6 +144,8 @@ public class LeaveService {
 
         return mapLeaveRequestToResponseDto(savedRequest);
     }
+
+    
 
     public List<LeaveResponseDto> getMyLeaves() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -3,53 +3,26 @@ package com.example.hrms.Dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.example.hrms.Enums.EmployeeStatus;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmployeeResponseDto {
+@Builder
+public class EmployeeSalaryResponse {
 
     private Long id;
 
-    private String employeeCode;
-
+    private String employeeId;
     private String employeeName;
 
-    private String email;
-
-    private String phone;
-
-    private String gender;
-
-    private LocalDate dateOfBirth;
-
-    private LocalDate joiningDate;
-
-    private EmployeeStatus employeeStatus;
-
-    private String bankAccountNumber;
-
-    private String ifsc;
-
-    private String departmentName;
-
-    private String designationName;
-
-    private String managerName;
-
-    
     private BigDecimal basicSalary;
     private BigDecimal hra;
     private BigDecimal otherAllowance;
     private BigDecimal taxPercent;
     private BigDecimal pfPercent;
     private LocalDate salaryEffectiveFrom;
-
 }
