@@ -51,7 +51,7 @@ export class Employees implements OnInit {
     taxPercent: 0,
     pfPercent: 0,
     salaryEffectiveFrom: '',
-  };
+  }
 
   ngOnInit(): void {
     this.loadEmployees();
@@ -114,23 +114,19 @@ export class Employees implements OnInit {
           (emp.employeeName && emp.employeeName.toLowerCase().includes(term)) ||
           (emp.email && emp.email.toLowerCase().includes(term)) ||
           (emp.departmentName && emp.departmentName.toLowerCase().includes(term)) ||
-          (emp.designationName && emp.designationName.toLowerCase().includes(term))
+          (emp.designationName && emp.designationName.toLowerCase().includes(term)),
       );
     }
 
     // Department filter
     if (this.selectedDepartment) {
-      result = result.filter(
-        (emp) => emp.departmentName === this.selectedDepartment
-      );
+      result = result.filter((emp) => emp.departmentName === this.selectedDepartment);
     }
 
     // Status filter
     if (this.selectedStatus) {
       result = result.filter(
-        (emp) =>
-          emp.employeeStatus === this.selectedStatus ||
-          emp.role === this.selectedStatus
+        (emp) => emp.employeeStatus === this.selectedStatus || emp.role === this.selectedStatus,
       );
     }
 
@@ -174,7 +170,12 @@ export class Employees implements OnInit {
   submitEmployee(): void {
     this.modalErrorMessage = '';
 
-    if (!this.newEmployee.employeeCode || !this.newEmployee.employeeName || !this.newEmployee.email || !this.newEmployee.password) {
+    if (
+      !this.newEmployee.employeeCode ||
+      !this.newEmployee.employeeName ||
+      !this.newEmployee.email ||
+      !this.newEmployee.password
+    ) {
       this.modalErrorMessage = 'Please fill in all mandatory fields (Code, Name, Email, Password).';
       return;
     }

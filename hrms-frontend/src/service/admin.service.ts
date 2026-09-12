@@ -39,6 +39,10 @@ export class AdminService {
     return this.http.post<any>(`http://localhost:8081/api/v1/manager/create-employee`, data);
   }
 
+  createDepartment(data: any): Observable<any> {
+    return this.http.post<any>(`${this.adminApi}/add-department`, data);
+  }
+
   getPendingLeaves(): Observable<any[]> {
     return this.http.get<any[]>(`${this.adminApi}/pending-leaves`);
   }
