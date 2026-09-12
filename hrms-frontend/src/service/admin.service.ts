@@ -42,6 +42,10 @@ export class AdminService {
   createDepartment(data: any): Observable<any> {
     return this.http.post<any>(`${this.adminApi}/add-department`, data);
   }
+  createDesignation(data:any):Observable<any>{
+    return this.http.post<any>(`${this.adminApi}/add-designation`,data);
+  }
+
 
   getPendingLeaves(): Observable<any[]> {
     return this.http.get<any[]>(`${this.adminApi}/pending-leaves`);
