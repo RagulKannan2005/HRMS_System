@@ -167,6 +167,9 @@ public class ManagerService {
                 List<Employee> employees = employeerepo.findByRole(Role.MANAGER);
                 return employees.stream().map(this::toManagerResponseDto).collect(Collectors.toList());
         }
+        public List<EmployeeResponseDto> getAllEmployee() {
+                return employeerepo.findAll().stream().map(this::toEmployeeResponseDto).collect(Collectors.toList());
+        }
 
         @Transactional
         public ManagerResponseDto updateManager(Long id, ManagerRequestDto request) {

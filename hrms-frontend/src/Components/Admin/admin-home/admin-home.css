@@ -1,0 +1,166 @@
+h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 24px;
+}
+
+/* Grid container with gap between cards */
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+/* Card item */
+.card-section {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.card-section:hover {
+  transform: translateY(-4px);
+  border-color: #2563eb;
+}
+
+.card-section .text {
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.card-section .number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.card-section .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #2563eb;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
+.card-section .icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* Managers Leave Container */
+.managers-leave-container {
+  margin-top: 32px;
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.leave-list {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.leave-list table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.leave-list thead tr {
+  border-bottom: 1px solid #1e293b;
+}
+
+.leave-list thead td {
+  padding: 14px 16px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.leave-list tbody tr {
+  border-bottom: 1px solid #1e293b;
+  transition: background-color 0.2s ease;
+}
+
+.leave-list tbody tr:last-child {
+  border-bottom: none;
+}
+
+.leave-list tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.leave-list tbody td {
+  padding: 16px;
+  color: #f8fafc;
+  vertical-align: middle;
+}
+
+/* Leave Status Badge */
+.leave-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  text-align: center;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-buttons button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.action-buttons .approve {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.action-buttons .approve:hover {
+  background-color: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.action-buttons .reject {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.action-buttons .reject:hover {
+  background-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}

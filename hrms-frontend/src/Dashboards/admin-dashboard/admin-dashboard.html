@@ -1,0 +1,58 @@
+<div class="contianer">
+  <div class="sidebar">
+    <div class="logo-container">
+      <div class="logo-icon"></div>
+      <div class="logo-text">
+        <h3>HRMS</h3>
+      </div>
+      <div class="logo-subtitle">
+        <span>Human Resource Management System </span>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section-title">MAIN MENU</div>
+      <div class="nav-links" routerLink="/admin/admin-home" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/dashboard (1).png" alt="Dashboard"></span>
+        <span class="text">Dashboard</span>
+      </div>
+      <div class="nav-links" routerLink="/admin/employees" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/community.png" alt="Employees"></span>
+        <span class="text">Employees</span>
+      </div>
+      <div class="nav-links" routerLink="/admin/department" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/departments.png" alt="Department"></span>
+        <span class="text">Departments</span>
+      </div>
+      <div class="nav-links">
+        <span class="icon"><img src="assets/icons/layers.png" alt="Designations"></span>
+        <span class="text">Designations</span>
+      </div>
+      <div class="nav-links">
+        <span class="icon"><img src="assets/icons/machine.png" alt="Attendance"></span>
+        <span class="text">Attendance</span>
+      </div>
+      <div class="nav-links">
+        <span class="icon"><img src="assets/icons/work.png" alt="Leave"></span>
+        <span class="text">Leave</span>
+      </div>
+      <div class="nav-links">
+        <span class="icon"><img src="assets/icons/sponsor.png" alt="Payroll"></span>
+        <span class="text">Payroll</span>
+      </div>
+      <div class="nav-links">
+        <span class="icon"><img src="assets/icons/document.png" alt="Reports"></span>
+        <span class="text">Reports</span>
+      </div>
+      <div class="nav-links" (click)="onLogout()">
+        <span class="icon"><img src="assets/icons/power-off.png" alt="Logout"></span>
+        <span class="text">Logout</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+

@@ -23,6 +23,7 @@ import com.example.hrms.Entity.Designation;
 import com.example.hrms.Entity.Employee;
 import com.example.hrms.Entity.LeaveBalance;
 import com.example.hrms.Entity.LeaveRequest;
+import com.example.hrms.Entity.EmployeeSalary;
 import com.example.hrms.Entity.User;
 import com.example.hrms.Enums.AttendanceStatus;
 import com.example.hrms.Enums.EmployeeStatus;
@@ -35,6 +36,7 @@ import com.example.hrms.Repository.DesignationRepository;
 import com.example.hrms.Repository.EmployeeRepository;
 import com.example.hrms.Repository.LeaveBalanceRepository;
 import com.example.hrms.Repository.LeaveRequestRepository;
+import com.example.hrms.Repository.SalaryRepository;
 import com.example.hrms.Repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -52,6 +54,11 @@ public class AdminService {
     private final LeaveBalanceRepository leaveBalanceRepo;
     private final LeaveRequestRepository leaveRequestRepo;
     private final AttendanceRepository attendanceRepo;
+    private final SalaryRepository employeeSalaryrepo;
+
+    public List<Employee> getAllEmployee() {
+        return employeerepo.findAll();
+    }
 
     @Transactional
     public ManagerResponseDto createManager(ManagerRequestDto request) {
@@ -100,6 +107,17 @@ public class AdminService {
                     .build();
             leaveBalanceRepo.save(balance);
         }
+        EmployeeSalary salary = EmployeeSalary.builder()
+                .employee(savedemployee)
+                .basicSalary(request.getBasicSalary())
+                .hra(request.getHra())
+                .otherAllowance(request.getOtherAllowance())
+                .taxPercent(request.getTaxPercent())
+                .pfPercent(request.getPfPercent())
+                .effectiveFrom(request.getSalaryEffectiveFrom())
+                .build();
+
+        employeeSalaryrepo.save(salary);
 
         User user = User.builder()
                 .email(request.getEmail())
@@ -277,6 +295,8 @@ public class AdminService {
                 .map(this::toLeaveResponseDto)
                 .collect(Collectors.toList());
     }
+
+    // public
 
     private LeaveResponseDto toLeaveResponseDto(LeaveRequest leaveRequest) {
         return LeaveResponseDto.builder()

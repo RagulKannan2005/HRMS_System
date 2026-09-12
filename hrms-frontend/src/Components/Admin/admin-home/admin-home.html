@@ -1,0 +1,71 @@
+<h2>Welcome back, Admin</h2>
+<div class="card-container">
+  <div class="card-section">
+    <span>👥</span>
+    <div class="text"><span>Total Employees</span></div>
+    <div class="number">
+      <span>{{ totalEmployees }}</span>
+    </div>
+  </div>
+  <div class="card-section">
+    <span>👔</span>
+    <div class="text"><span>Total Managers</span></div>
+    <div class="number">
+      <span>{{ totalManagers }}</span>
+    </div>
+  </div>
+  <div class="card-section">
+    <span>🗂️</span>
+    <div class="text"><span>Total Departments</span></div>
+    <div class="number">
+      <span>{{ totalDepartments }}</span>
+    </div>
+  </div>
+  <div class="card-section">
+    <span>⌛</span>
+    <div class="text"><span>Pending Leaves</span></div>
+    <div class="number">
+      <span>{{ totalLeaves }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="managers-leave-container">
+  <div class="leave-list">
+    <table>
+      <thead>
+        <tr>
+          <td>Manager Name</td>
+          <td>Leave Type</td>
+          <td>Reason</td>
+          <td>From - To</td>
+          <td>Status</td>
+          <td>Actions</td>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of pendingLeavesList; track item.id) {
+          <tr>
+            <td>{{ item.employeeName || item.managerName || 'Manager' }}</td>
+            <td>{{ item.leaveType }}</td>
+            <td>{{ item.reason }}</td>
+            <td>{{ item.fromDate || item.startDate }} - {{ item.toDate || item.endDate }}</td>
+            <td><div class="leave-status">{{ item.status }}</div></td>
+            <td>
+              <div class="action-buttons">
+                <button class="approve" (click)="onApproveLeave(item.id)">Approve</button>
+                <button class="reject" (click)="onRejectLeave(item.id)">Reject</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" style="text-align: center; color: #94a3b8; padding: 24px;">
+              No pending manager leave requests.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

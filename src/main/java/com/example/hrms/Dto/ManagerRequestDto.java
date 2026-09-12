@@ -1,5 +1,6 @@
 package com.example.hrms.Dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.Email;
@@ -55,4 +56,11 @@ public class ManagerRequestDto {
     private Long designationId;
 
     private Long managerId;
+
+    private BigDecimal basicSalary;
+    private BigDecimal hra;
+    private BigDecimal otherAllowance;
+    private BigDecimal taxPercent;
+    private BigDecimal pfPercent;
+    private LocalDate salaryEffectiveFrom;
 }

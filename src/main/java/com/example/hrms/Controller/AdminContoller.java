@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.hrms.Dto.DepartmentRequestDto;
+import com.example.hrms.Dto.EmployeeResponseDto;
 import com.example.hrms.Dto.DepartmentResponseDto;
 import com.example.hrms.Dto.DesignationRequestDto;
 import com.example.hrms.Dto.DesignationResponseDto;
@@ -22,6 +23,7 @@ import com.example.hrms.Dto.ManagerResponseDto;
 // import com.example.hrms.Entity.Department;
 import com.example.hrms.Service.AdminService;
 import com.example.hrms.Service.ManagerService;
+
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,8 @@ public class AdminContoller {
         ManagerResponseDto manager = adminService.createManager(request);
         return ResponseEntity.ok(manager);
     }
+
+    
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add-designation")
@@ -72,6 +76,12 @@ public class AdminContoller {
     @GetMapping("/managers")
     public ResponseEntity<List<ManagerResponseDto>> getManagers() {
         return ResponseEntity.ok(managerService.getAllManagers());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/employees")
+    public ResponseEntity<List<EmployeeResponseDto>> getAllEmployee() {
+        return ResponseEntity.ok(managerService.getAllEmployee());
     }
 
     @PreAuthorize("hasRole('ADMIN')")

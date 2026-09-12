@@ -1,1 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global Black & Blue Theme Setup */
+:root {
+  --bg-primary: #0b0f19;      /* Main Page Dark Background */
+  --bg-secondary: #0f172a;    /* Card & Sidebar Dark Slate */
+  --bg-hover: #1e293b;        /* Subtle Hover State */
+  --accent-blue: #2563eb;     /* Primary Blue */
+  --accent-blue-hover: #1d4ed8; /* Darker Blue Hover */
+  --text-main: #f8fafc;       /* Main White Text */
+  --text-muted: #94a3b8;      /* Muted Gray Text */
+  --border-color: #1e293b;    /* Border Line Color */
+}
+
+/* Global Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
