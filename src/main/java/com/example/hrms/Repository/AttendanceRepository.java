@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.hrms.Entity.Attendance;
+import com.example.hrms.Enums.AttendanceStatus;
 import com.example.hrms.Enums.LeaveStatus;
 
 @Repository
@@ -30,4 +31,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByEmployee_IdAndYearAndMonth(@Param("employeeId") Long employeeId,
             @Param("year") int year,
             @Param("month") int month);
+
+    List<Attendance> findByDateAndStatus(LocalDate date, AttendanceStatus status);
 }
+

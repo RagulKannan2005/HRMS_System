@@ -1,0 +1,112 @@
+<div class="attendance-page">
+  <!-- Header -->
+  <div class="page-header">
+    <h2>Attendance</h2>
+  </div>
+
+  <!-- Stat Cards Grid -->
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-icon blue">
+        <img src="assets/icons/community.png" alt="Employees" />
+      </div>
+      <div class="card-info">
+        <h3>{{ totalEmployees }}</h3>
+        <span>Employees</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon purple">
+        <img src="assets/icons/departments.png" alt="Departments" />
+      </div>
+      <div class="card-info">
+        <h3>{{ totalDepartments }}</h3>
+        <span>Departments</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon orange">
+        <img src="assets/icons/work.png" alt="Leave Requests" />
+      </div>
+      <div class="card-info">
+        <h3>{{ totalLeaves }}</h3>
+        <span>Leave Requests</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon green">
+        <img src="assets/icons/machine.png" alt="Attendance" />
+      </div>
+      <div class="card-info">
+        <h3>{{ totalemployeePresent }}</h3>
+        <span>Present Today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table Section -->
+  <div class="attendance-section">
+    <div class="section-header">
+      <h3>Daily Attendance Record</h3>
+      <div class="filter-group">
+        <label for="dateSelect">Date:</label>
+        <input type="date" name="dateSelect" id="dateSelect" [(ngModel)]="selectedDate" />
+        <label for="statusSelect">Status:</label>
+        <select id="statusSelect" class="status-select" [(ngModel)]="selectedStatus">
+          <option value="all">All</option>
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="leave">Leave</option>
+        </select>
+        <button class="btn-filter" (click)="onFilter()">Search</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee Name</th>
+            <th>Employee ID</th>
+            <th>Department</th>
+            <th>Designation</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of attendance; track item.id || $index) {
+            <tr>
+              <td class="emp-name">{{ item.employeeName || item.user?.name || '-' }}</td>
+              <td>
+                <span class="code-tag">{{ item.employeeCode || item.employeeId || item.user?.empid || '-' }}</span>
+              </td>
+              <td>{{ item.departmentName || item.user?.department || '-' }}</td>
+              <td>{{ item.designationName || item.user?.designation || '-' }}</td>
+              <td>{{ item.date }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.present]="item.status === 'PRESENT'"
+                  [class.absent]="item.status === 'ABSENT'"
+                  [class.leave]="item.status === 'ON_LEAVE' || item.status === 'LEAVE'"
+                >
+                  {{ item.status === 'ON_LEAVE' ? 'Leave' : item.status }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" style="text-align: center; color: #94a3b8; padding: 24px;">
+                No attendance records found.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

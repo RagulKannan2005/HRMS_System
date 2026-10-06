@@ -5,6 +5,7 @@ import { AdminHome } from '../Components/Admin/admin-home/admin-home';
 import { Employees } from '../Components/Admin/employees/employees';
 import { Departments } from '../Components/Admin/departments/departments';
 import { Designation } from '../Components/Admin/designation/designation';
+import { AdminAttendance } from '../Components/Admin/admin-attendance/admin-attendance';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -19,6 +20,7 @@ export const routes: Routes = [
       { path: 'employees', component: Employees },
       { path: 'department', component: Departments },
       { path: 'designation', component: Designation },
+      {path:'attendance',component:AdminAttendance}
     ],
   },
 ];

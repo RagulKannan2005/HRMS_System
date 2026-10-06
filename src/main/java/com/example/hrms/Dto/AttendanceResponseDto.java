@@ -18,6 +18,10 @@ public class AttendanceResponseDto {
 
     private Long id;
     private Long employeeId;
+    private String employeeName;
+    private String employeeCode;
+    private String departmentName;
+    private String designationName;
     private LocalDate date;
     private LocalTime checkin;
     private LocalTime checkout;

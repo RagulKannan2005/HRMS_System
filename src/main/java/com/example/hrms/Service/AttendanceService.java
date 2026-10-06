@@ -171,6 +171,12 @@ public class AttendanceService {
     }
 
     @Transactional
+    public List<AttendanceResponseDto> getAlldata(){
+        List<Attendance> attendance=attendancerepo.findAll();
+        return  attendance.stream().map(this::convertToResponseDto).collect(Collectors.toList());
+    }
+
+    @Transactional
     public List<AttendanceResponseDto> getEmployeeAttendance(LocalDate date) {
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -202,6 +208,13 @@ public class AttendanceService {
         return attendances.stream().map(this::convertToResponseDto).collect(Collectors.toList());
     }
 
+    @Transactional
+    public List<AttendanceResponseDto> getAttendanceByDateAndStatus(LocalDate date, String status) {
+        AttendanceStatus attendanceStatus = AttendanceStatus.valueOf(status.toUpperCase());
+        List<Attendance> attendance = attendancerepo.findByDateAndStatus(date, attendanceStatus);
+        return attendance.stream().map(this::convertToResponseDto).collect(Collectors.toList());
+    }
+
     private int calculateLateMinutes(LocalTime time){
 
         LocalTime expectedCheckIn=LocalTime.of(9,0);
@@ -223,9 +236,14 @@ public class AttendanceService {
     }
 
     private AttendanceResponseDto convertToResponseDto(Attendance attendance) {
+        Employee emp = attendance.getEmployee();
         return AttendanceResponseDto.builder()
                 .id(attendance.getId())
-                .employeeId(attendance.getEmployee() != null ? attendance.getEmployee().getId() : null)
+                .employeeId(emp != null ? emp.getId() : null)
+                .employeeName(emp != null ? emp.getEmployeeName() : null)
+                .employeeCode(emp != null ? emp.getEmployeeCode() : null)
+                .departmentName(emp != null && emp.getDepartment() != null ? emp.getDepartment().getName() : null)
+                .designationName(emp != null && emp.getDesignation() != null ? emp.getDesignation().getTitle() : null)
                 .date(attendance.getDate())
                 .checkin(attendance.getCheckin())
                 .checkout(attendance.getCheckout())
