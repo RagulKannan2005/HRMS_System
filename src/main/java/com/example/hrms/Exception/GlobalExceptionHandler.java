@@ -28,19 +28,35 @@ public class GlobalExceptionHandler {
             String message = error.getDefaultMessage();
             errors.put(fieldname, message);
         });
+        System.err.println("=== VALIDATION ERROR 400: " + errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        System.err.println("=== ILLEGAL ARGUMENT 400: " + ex.getMessage());
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(
             DataIntegrityViolationException ex) {
+        System.err.println("=== DATA INTEGRITY CONFLICT 409: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", "Database constraint violation: " + ex.getMostSpecificCause().getMessage()));
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+        System.err.println("=== RUNTIME EXCEPTION 400: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Bad request"));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleException(Exception ex) {
+        System.err.println("=== UNHANDLED EXCEPTION 500: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Internal server error"));
+    }
 }

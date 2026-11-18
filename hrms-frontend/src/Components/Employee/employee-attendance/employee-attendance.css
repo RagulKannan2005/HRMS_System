@@ -1,0 +1,277 @@
+.attendance-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  background-color: #0f172a;
+  padding: 24px 28px;
+  border-radius: 16px;
+  border: 1px solid #1e293b;
+}
+
+.page-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Punch Action Panel */
+.quick-punch-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background-color: #1e293b;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+}
+
+.punch-status {
+  display: flex;
+  flex-direction: column;
+}
+
+.punch-status .label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.punch-status .value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.status-present {
+  color: #4ade80;
+}
+
+.status-absent {
+  color: #f87171;
+}
+
+.btn-punch {
+  border: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.btn-punch.in {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.btn-punch.in:hover {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.btn-punch.out {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.btn-punch.out:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.badge-done {
+  font-size: 13px;
+  color: #4ade80;
+  font-weight: 600;
+}
+
+/* Banner */
+.banner {
+  background-color: #065f46;
+  border: 1px solid #059669;
+  color: #ecfdf5;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.banner.error {
+  background-color: #7f1d1d;
+  border-color: #dc2626;
+  color: #fef2f2;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.card-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.card-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.text-green { color: #4ade80; }
+.text-red { color: #f87171; }
+.text-amber { color: #fbbf24; }
+
+/* Table Card */
+.table-card {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.table-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.table-topbar h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #f8fafc;
+}
+
+.filter-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.month-input {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.month-input:focus {
+  border-color: #2563eb;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  border-bottom: 1px solid #1e293b;
+}
+
+td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #cbd5e1;
+  border-bottom: 1px solid #1e293b;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.font-bold {
+  font-weight: 600;
+}
+
+.text-white {
+  color: #f8fafc;
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.status-pill.present {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-pill.absent {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-pill.on_leave {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-pill.holiday {
+  background-color: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 14px;
+}

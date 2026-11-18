@@ -38,12 +38,12 @@ export class Login {
             }),
           );
           const userRole = (response?.role || response?.user?.role || '').toString().toUpperCase();
-          if (userRole === 'ADMIN') {
+          if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
             this.router.navigate(['/admin']);
-          } else if (userRole === 'MANAGER') {
+          } else if (userRole === 'MANAGER' || userRole === 'ROLE_MANAGER') {
             this.router.navigate(['/ManagerDashboard']);
-          } else if (userRole === 'EMPLOYEE') {
-            this.router.navigate(['/EmployeeDashboard']);
+          } else if (userRole === 'EMPLOYEE' || userRole === 'ROLE_EMPLOYEE') {
+            this.router.navigate(['/employee']);
           }
         }
         console.log('login successful');

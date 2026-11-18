@@ -6,6 +6,13 @@ import { Employees } from '../Components/Admin/employees/employees';
 import { Departments } from '../Components/Admin/departments/departments';
 import { Designation } from '../Components/Admin/designation/designation';
 import { AdminAttendance } from '../Components/Admin/admin-attendance/admin-attendance';
+import { AdminLeave } from '../Components/Admin/admin-leave/admin-leave';
+import { Payroll } from '../Components/Admin/payroll/payroll';
+import { EmployeeDashboard } from '../Dashboards/employee-dashboard/employee-dashboard';
+import { EmployeeHome } from '../Components/Employee/employee-home/employee-home';
+import { EmployeeAttendance } from '../Components/Employee/employee-attendance/employee-attendance';
+import { EmployeeLeaves } from '../Components/Employee/employee-leaves/employee-leaves';
+import { EmployeePayroll } from '../Components/Employee/employee-payroll/employee-payroll';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -20,7 +27,21 @@ export const routes: Routes = [
       { path: 'employees', component: Employees },
       { path: 'department', component: Departments },
       { path: 'designation', component: Designation },
-      {path:'attendance',component:AdminAttendance}
+      { path: 'attendance', component: AdminAttendance },
+      { path: 'admin-leave', component: AdminLeave },
+      { path: 'admin-payroll', component: Payroll }
     ],
   },
+  {
+    path: 'employee',
+    component: EmployeeDashboard,
+    children: [
+      { path: '', redirectTo: 'employee-home', pathMatch: 'full' },
+      { path: 'employee-home', component: EmployeeHome },
+      { path: 'attendance', component: EmployeeAttendance },
+      { path: 'leaves', component: EmployeeLeaves },
+      { path: 'payroll', component: EmployeePayroll },
+    ],
+  },
+  { path: 'EmployeeDashboard', redirectTo: 'employee', pathMatch: 'full' },
 ];

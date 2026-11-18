@@ -1,4 +1,3 @@
-
 .employees-header {
   display: flex;
   justify-content: space-between;
@@ -290,6 +289,7 @@
     opacity: 0;
     transform: scale(0.95) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -339,6 +339,17 @@
 
 .full-width {
   grid-column: span 2;
+}
+
+.form-section-title {
+  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #334155;
 }
 
 .form-group {

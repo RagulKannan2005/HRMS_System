@@ -1,0 +1,157 @@
+<div class="leaves-page">
+  <div class="page-header">
+    <div>
+      <h2>Leave Management</h2>
+      <p class="subtitle">Apply for time off and track status of your requests</p>
+    </div>
+
+    <button class="btn-primary" (click)="toggleApplyModal(true)">
+      + Apply for Leave
+    </button>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="banner" class="banner" [ngClass]="{'error': banner.isError}">
+    {{ banner.message }}
+  </div>
+
+  <!-- Leave Entitlements Cards -->
+  <div class="cards-grid">
+    <div class="entitlement-card">
+      <div class="entitlement-icon">🏖️</div>
+      <div class="entitlement-info">
+        <span class="type-name">Casual Leave</span>
+        <span class="limit">12 Days / Year</span>
+      </div>
+    </div>
+    <div class="entitlement-card">
+      <div class="entitlement-icon">🩺</div>
+      <div class="entitlement-info">
+        <span class="type-name">Sick Leave</span>
+        <span class="limit">12 Days / Year</span>
+      </div>
+    </div>
+    <div class="entitlement-card">
+      <div class="entitlement-icon">⭐</div>
+      <div class="entitlement-info">
+        <span class="type-name">Earned Leave</span>
+        <span class="limit">18 Days / Year</span>
+      </div>
+    </div>
+    <div class="entitlement-card">
+      <div class="entitlement-icon">👶</div>
+      <div class="entitlement-info">
+        <span class="type-name">Maternity Leave</span>
+        <span class="limit">182 Days</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply Leave Modal -->
+  <div *ngIf="showApplyModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>New Leave Application</h3>
+        <button class="close-btn" (click)="toggleApplyModal(false)">✕</button>
+      </div>
+
+      <!-- Modal Error Banner -->
+      <div *ngIf="banner" class="banner" [ngClass]="{'error': banner.isError}" style="margin-bottom: 16px;">
+        {{ banner.message }}
+      </div>
+
+      <form [formGroup]="leaveForm" (ngSubmit)="onSubmitLeave()">
+        <div class="form-group">
+          <label>Leave Type *</label>
+          <select formControlName="leaveType" class="form-control">
+            <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>From Date *</label>
+            <input type="date" formControlName="fromDate" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label>To Date *</label>
+            <input type="date" formControlName="toDate" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Reason *</label>
+          <textarea
+            formControlName="reason"
+            rows="3"
+            placeholder="Explain the reason for leave..."
+            class="form-control"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="toggleApplyModal(false)">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaves History Table -->
+  <div class="table-card">
+    <div class="table-topbar">
+      <h3>My Leave Applications</h3>
+    </div>
+
+    <div class="table-container">
+      <table *ngIf="leaves.length > 0; else noLeaves">
+        <thead>
+          <tr>
+            <th>Leave Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of leaves">
+            <td class="font-bold text-white">{{ l.leaveType }}</td>
+            <td>{{ l.fromDate }}</td>
+            <td>{{ l.toDate }}</td>
+            <td>{{ l.numberOfDays }}</td>
+            <td class="reason-cell" [title]="l.reason">{{ l.reason }}</td>
+            <td>
+              <span class="status-pill" [ngClass]="l.status ? l.status.toLowerCase() : ''">
+                {{ l.status }}
+              </span>
+            </td>
+            <td>
+              <button
+                *ngIf="l.status === 'PENDING'"
+                class="btn-cancel"
+                (click)="onCancelLeave(l.id)"
+              >
+                Cancel
+              </button>
+              <span *ngIf="l.status !== 'PENDING'" class="text-muted">--</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noLeaves>
+        <div class="empty-state">
+          <p>No leave requests found. Click "Apply for Leave" above to submit one.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

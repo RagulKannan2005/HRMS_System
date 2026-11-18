@@ -31,7 +31,7 @@ public class ManagerController {
     private final ManagerService managerservice;
 
 
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/create-employee")
     public ResponseEntity<EmployeeResponseDto> createemployee(@RequestBody @Valid EmployeeRequestDto emp){
         EmployeeResponseDto res=managerservice.createEmployee(emp);

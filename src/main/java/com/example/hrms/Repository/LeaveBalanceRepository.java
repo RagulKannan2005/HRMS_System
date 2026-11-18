@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.hrms.Entity.LeaveBalance;
@@ -15,7 +17,7 @@ public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance,Long>
     
     Optional<LeaveBalance> findByEmployeeIdAndLeaveType(Long employeeId, LeaveType leaveReason);
     
-    Optional<LeaveBalance> findByEmployeeId_AndLeaveTypeAndYear(Long employeeId, LeaveType leaveType, int year);
-    
+    @Query("SELECT lb FROM LeaveBalance lb WHERE lb.employee.id = :employeeId AND lb.leaveType = :leaveType AND lb.year = :year")
+    Optional<LeaveBalance> findByEmployeeId_AndLeaveTypeAndYear(@Param("employeeId") Long employeeId, @Param("leaveType") LeaveType leaveType, @Param("year") int year);
     
 }

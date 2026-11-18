@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -57,10 +58,26 @@ public class ManagerRequestDto {
 
     private Long managerId;
 
+    @NotNull(message = "Basic salary is required")
+    @PositiveOrZero(message = "Basic salary must be non-negative")
     private BigDecimal basicSalary;
+
+    @NotNull(message = "HRA is required")
+    @PositiveOrZero(message = "HRA must be non-negative")
     private BigDecimal hra;
+
+    @NotNull(message = "Other allowance is required")
+    @PositiveOrZero(message = "Other allowance must be non-negative")
     private BigDecimal otherAllowance;
+
+    @NotNull(message = "Tax percent is required")
+    @PositiveOrZero(message = "Tax percent must be non-negative")
     private BigDecimal taxPercent;
+
+    @NotNull(message = "PF percent is required")
+    @PositiveOrZero(message = "PF percent must be non-negative")
     private BigDecimal pfPercent;
+
+    @NotNull(message = "Salary effective from date is required")
     private LocalDate salaryEffectiveFrom;
 }

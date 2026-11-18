@@ -37,6 +37,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/api/v1/auth/**").permitAll()
+                                                .requestMatchers("/error").permitAll()
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                                                 .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")
@@ -45,14 +46,20 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/employee/**")
                                                 .hasAnyRole("EMPLOYEE", "MANAGER", "ADMIN")
                                                 .requestMatchers("/api/v1/payroll/employee/**")
-                                                .hasAnyRole("ADMIN", "MANAGER")
+                                                .hasAnyRole("EMPLOYEE", "MANAGER", "ADMIN")
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .exceptionHandling(exceptions -> exceptions
                                                 .authenticationEntryPoint((request, response, authException) -> {
+                                                        System.err.println("=== 401 UNAUTHORIZED on URI: " + request.getRequestURI() + " -> " + authException.getMessage());
                                                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
                                                                         "Unauthorized: " + authException.getMessage());
+                                                })
+                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                                        System.err.println("=== 403 FORBIDDEN on URI: " + request.getRequestURI() + " -> " + accessDeniedException.getMessage());
+                                                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                                                                        "Forbidden: " + accessDeniedException.getMessage());
                                                 }))
                                 .authenticationProvider(authenticationProvider)
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

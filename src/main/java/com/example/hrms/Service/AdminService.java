@@ -5,6 +5,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -93,7 +94,9 @@ public class AdminService {
                 .ifsc(request.getIfsc())
                 .department(department)
                 .designation(designation)
-                .manager(null)
+                .manager(request.getManagerId() != null
+                        ? employeerepo.findById(request.getManagerId()).orElse(null)
+                        : null)
                 .build();
 
         Employee savedemployee = employeerepo.save(employee);
@@ -109,12 +112,13 @@ public class AdminService {
         }
         EmployeeSalary salary = EmployeeSalary.builder()
                 .employee(savedemployee)
-                .basicSalary(request.getBasicSalary())
-                .hra(request.getHra())
-                .otherAllowance(request.getOtherAllowance())
-                .taxPercent(request.getTaxPercent())
-                .pfPercent(request.getPfPercent())
-                .effectiveFrom(request.getSalaryEffectiveFrom())
+                .basicSalary(request.getBasicSalary() != null ? request.getBasicSalary() : BigDecimal.ZERO)
+                .hra(request.getHra() != null ? request.getHra() : BigDecimal.ZERO)
+                .otherAllowance(request.getOtherAllowance() != null ? request.getOtherAllowance() : BigDecimal.ZERO)
+                .taxPercent(request.getTaxPercent() != null ? request.getTaxPercent() : BigDecimal.ZERO)
+                .pfPercent(request.getPfPercent() != null ? request.getPfPercent() : BigDecimal.ZERO)
+                .effectiveFrom(request.getSalaryEffectiveFrom() != null ? request.getSalaryEffectiveFrom()
+                        : request.getJoiningDate())
                 .build();
 
         employeeSalaryrepo.save(salary);

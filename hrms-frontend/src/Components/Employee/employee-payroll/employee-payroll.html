@@ -1,0 +1,139 @@
+<div class="payroll-page">
+  <div class="page-header">
+    <div>
+      <h2>My Payroll & Payslips</h2>
+      <p class="subtitle">Review salary breakdowns, tax deductions, and download payslips</p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="cards-grid" *ngIf="payrolls.length > 0">
+    <div class="summary-card">
+      <span class="card-label">Latest Net Pay</span>
+      <span class="card-num text-green">₹{{ payrolls[0].netSalary | number }}</span>
+      <span class="card-sub">{{ getMonthName(payrolls[0].month) }} {{ payrolls[0].year }}</span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label">Gross Salary</span>
+      <span class="card-num text-blue">₹{{ payrolls[0].grossSalary | number }}</span>
+      <span class="card-sub">Before deductions</span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label">Total Deductions</span>
+      <span class="card-num text-red">₹{{ (payrolls[0].totalDeduction || payrolls[0].deductions) | number }}</span>
+      <span class="card-sub">PF, Tax & Leaves</span>
+    </div>
+  </div>
+
+  <!-- Detailed Payslip Modal -->
+  <div *ngIf="selectedPayslip" class="modal-overlay">
+    <div class="payslip-modal">
+      <div class="payslip-header">
+        <div>
+          <h3>PAYSLIP</h3>
+          <p class="company-name">HRMS Corporation</p>
+        </div>
+        <button class="close-btn" (click)="closePayslip()">✕</button>
+      </div>
+
+      <div class="employee-meta">
+        <div>
+          <span class="meta-label">Employee:</span>
+          <span class="meta-val">{{ selectedPayslip.employeeName || username }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Pay Period:</span>
+          <span class="meta-val">{{ getMonthName(selectedPayslip.month) }} {{ selectedPayslip.year }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Processed On:</span>
+          <span class="meta-val">{{ selectedPayslip.processedAt | date:'mediumDate' }}</span>
+        </div>
+      </div>
+
+      <div class="breakdown-grid">
+        <div class="breakdown-col">
+          <h4>EARNINGS</h4>
+          <div class="line-item">
+            <span>Gross Salary</span>
+            <span class="amount">₹{{ selectedPayslip.grossSalary | number }}</span>
+          </div>
+        </div>
+
+        <div class="breakdown-col">
+          <h4>DEDUCTIONS</h4>
+          <div class="line-item">
+            <span>Provident Fund (PF)</span>
+            <span class="amount">₹{{ (selectedPayslip.pf || 0) | number }}</span>
+          </div>
+          <div class="line-item">
+            <span>Income Tax (TDS)</span>
+            <span class="amount">₹{{ (selectedPayslip.tax || 0) | number }}</span>
+          </div>
+          <div class="line-item" *ngIf="selectedPayslip.leaveDeduction">
+            <span>Leave Deduction</span>
+            <span class="amount">₹{{ selectedPayslip.leaveDeduction | number }}</span>
+          </div>
+          <div class="line-item total-line">
+            <span>Total Deductions</span>
+            <span class="amount text-red">₹{{ (selectedPayslip.totalDeduction || selectedPayslip.deductions) | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="netpay-card">
+        <span class="label">NET SALARY PAYABLE:</span>
+        <span class="val">₹{{ selectedPayslip.netSalary | number }}</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-print" (click)="printPayslip()">🖨️ Print / Save PDF</button>
+        <button class="btn-secondary" (click)="closePayslip()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payroll History Table -->
+  <div class="table-card">
+    <div class="table-topbar">
+      <h3>Salary Payment History</h3>
+    </div>
+
+    <div class="table-container">
+      <table *ngIf="payrolls.length > 0; else noPayrolls">
+        <thead>
+          <tr>
+            <th>Pay Period</th>
+            <th>Gross Salary</th>
+            <th>Deductions</th>
+            <th>Net Salary</th>
+            <th>Processed At</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of payrolls">
+            <td class="font-bold text-white">
+              {{ getMonthName(p.month) }} {{ p.year }}
+            </td>
+            <td>₹{{ p.grossSalary | number }}</td>
+            <td class="text-red">₹{{ (p.totalDeduction || p.deductions) | number }}</td>
+            <td class="text-green font-bold">₹{{ p.netSalary | number }}</td>
+            <td>{{ p.processedAt | date:'mediumDate' }}</td>
+            <td>
+              <button class="btn-view" (click)="openPayslip(p)">
+                📄 View Payslip
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noPayrolls>
+        <div class="empty-state">
+          <p>No payroll history found yet.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

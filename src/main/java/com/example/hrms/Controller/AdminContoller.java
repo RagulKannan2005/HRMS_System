@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.hrms.Dto.DepartmentRequestDto;
+import com.example.hrms.Dto.EmployeeRequestDto;
 import com.example.hrms.Dto.EmployeeResponseDto;
 import com.example.hrms.Dto.DepartmentResponseDto;
 import com.example.hrms.Dto.DesignationRequestDto;
@@ -22,8 +23,8 @@ import com.example.hrms.Dto.ManagerRequestDto;
 import com.example.hrms.Dto.ManagerResponseDto;
 // import com.example.hrms.Entity.Department;
 import com.example.hrms.Service.AdminService;
+import com.example.hrms.Service.LeaveService;
 import com.example.hrms.Service.ManagerService;
-
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminContoller {
     private final AdminService adminService;
     private final ManagerService managerService;
+    private final LeaveService leaveService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register-manager")
@@ -42,7 +44,12 @@ public class AdminContoller {
         return ResponseEntity.ok(manager);
     }
 
-    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/register-employee")
+    public ResponseEntity<EmployeeResponseDto> createEmployee(@RequestBody @Valid EmployeeRequestDto request) {
+        EmployeeResponseDto employee = managerService.createEmployee(request);
+        return ResponseEntity.ok(employee);
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add-designation")
@@ -112,6 +119,12 @@ public class AdminContoller {
     @GetMapping("/pending-leaves")
     public ResponseEntity<List<LeaveResponseDto>> getPendingLeaves() {
         return ResponseEntity.ok(adminService.getPendingLeaveRequests());
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    @GetMapping("/getleavesbystatus/{status}")
+    public ResponseEntity<List<LeaveResponseDto>> getleavesByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(leaveService.getLeavesByStatus(status));
     }
 
 }

@@ -44,7 +44,7 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getMyLeaves());
     }
 
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     @GetMapping("/getleavesbystatus/{status}")
     public ResponseEntity<List<LeaveResponseDto>> getleavesByStatus(@PathVariable String status){
         return ResponseEntity.ok(leaveService.getLeavesByStatus(status));

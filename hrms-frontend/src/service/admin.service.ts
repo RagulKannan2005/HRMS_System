@@ -36,14 +36,14 @@ export class AdminService {
   }
 
   createEmployee(data: any): Observable<any> {
-    return this.http.post<any>(`http://localhost:8081/api/v1/manager/create-employee`, data);
+    return this.http.post<any>(`${this.adminApi}/register-employee`, data);
   }
 
   createDepartment(data: any): Observable<any> {
     return this.http.post<any>(`${this.adminApi}/add-department`, data);
   }
-  createDesignation(data:any):Observable<any>{
-    return this.http.post<any>(`${this.adminApi}/add-designation`,data);
+  createDesignation(data: any): Observable<any> {
+    return this.http.post<any>(`${this.adminApi}/add-designation`, data);
   }
 
 
@@ -57,5 +57,15 @@ export class AdminService {
 
   rejectLeave(leaveRequestId: number): Observable<any> {
     return this.http.put<any>(`${this.adminApi}/reject-leave/${leaveRequestId}`, {});
+  }
+
+  getLeaveBystatus(status: string): Observable<any[]> {
+
+    if (!status) {
+      return this.http.get<any[]>(`${this.adminApi}/pending-leaves`);
+    }
+    return this.http.get<any[]>(
+      `${this.adminApi}/getleavesbystatus/${status}`
+    );
   }
 }

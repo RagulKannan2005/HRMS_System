@@ -1,1 +1,136 @@
-<p>admin-leave works!</p>
+<section class="leave-page" aria-labelledby="leave-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">ADMINISTRATION</p>
+      <h1 id="leave-title">Leave management</h1>
+      <p class="page-description">Review and manage employee leave applications.</p>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Filter leave requests">
+    <label class="search-field" for="employee-search">
+      <span class="sr-only">Search by employee ID</span>
+      <input id="employee-search" type="search" placeholder="Search by employee ID" />
+    </label>
+
+    <label class="sr-only" for="leave-type-filter">Filter by leave type</label>
+    <select id="leave-type-filter">
+      <option value="">All leave types</option>
+      <option value="sick">Sick leave</option>
+      <option value="casual">Casual leave</option>
+      <option value="earned">Earned leave</option>
+    </select>
+
+    <label class="sr-only" for="status-filter">Filter by status</label>
+    <select id="status-filter" (change)="filteredLeves($event)">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+  </section>
+
+  <div class="content-grid">
+    <section class="requests-card" aria-labelledby="requests-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="requests-title">Leave requests</h2>
+          <p>Review submitted applications and their current status.</p>
+        </div>
+        <span class="request-count">1 request</span>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <caption class="sr-only">Employee leave requests and available actions</caption>
+          <thead>
+            <tr>
+              <th scope="col">Employee</th>
+              <th scope="col">Leave type</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Days</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for(item of leaveList; track item.id){
+            <tr>
+              <td>
+                <div class="employee-cell">
+                  <span class="employee-avatar" aria-hidden="true">RK</span>
+                  <span>
+                    <strong>{{item.employeeName||item.managerName||'Manager'}}</strong>
+                    <small>{{item.employeeId||item.managerId||''}}</small>
+                  </span>
+                </div>
+              </td>
+              <td>{{item.leaveType}}</td>
+              <td>{{item.fromDate ||item.startDate }}-{{item.toDate||item.endDate}}</td>
+              <td>{{item.noofdays}}</td>
+              <td><span class="status-badge pending">{{item.status}}</span></td>
+              <td>
+                @if(item.status!='APPROVED'){
+
+                <div class="row-actions" aria-label="Actions for Ragul Kannan's request">
+                  <button class="approve-button" type="button" (click)="onApproveLeave(item.id)">Approve</button>
+                  <button class="reject-button" type="button" (click)="onRejectLeave(item.id)">Reject</button>
+                </div>
+              }
+              </td>
+              
+            </tr>
+            }@empty{
+            <tr>
+              <td colspan="6" style="text-align: center;color: #94a3b8;padding: 24px;">no Pending manager leave request.
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="request-card" aria-labelledby="request-details-title">
+      <div class="card-heading details-heading">
+        <div>
+          <p class="eyebrow">REQUEST REVIEW</p>
+          <h2 id="request-details-title">Request details</h2>
+        </div>
+        <span class="status-badge pending">Pending</span>
+      </div>
+
+      <div class="employee-summary">
+        <span class="employee-avatar large" aria-hidden="true">RK</span>
+        <div>
+          <h3>Ragul Kannan</h3>
+          <p>Employee ID · 1</p>
+        </div>
+      </div>
+
+      <dl class="request-info">
+        <div>
+          <dt>Leave type</dt>
+          <dd>Sick leave</dd>
+        </div>
+        <div>
+          <dt>Duration</dt>
+          <dd>Oct 1 – Oct 3, 2023</dd>
+        </div>
+        <div>
+          <dt>Number of days</dt>
+          <dd>3 days</dd>
+        </div>
+        <div>
+          <dt>Reason</dt>
+          <dd>Feeling unwell and need rest.</dd>
+        </div>
+      </dl>
+
+      <div class="decision-actions">
+        <button class="approve-button" type="button">Approve request</button>
+        <button class="reject-button" type="button">Reject request</button>
+      </div>
+    </aside>
+  </div>
+</section>

@@ -1,0 +1,169 @@
+<div class="employee-home-container">
+  <!-- Header / Greeting -->
+  <div class="header-section">
+    <div>
+      <h2 class="welcome-title">Welcome back, {{ username }} 👋</h2>
+      <p class="subtitle">{{ currentDate }}</p>
+    </div>
+
+    <!-- Quick Check-in/Check-out Action Box -->
+    <div class="clock-action-card">
+      <div class="clock-info">
+        <span class="clock-label">Today's Shift</span>
+        <span class="clock-status" [ngClass]="{
+          'status-present': todayAttendance?.status === 'PRESENT',
+          'status-absent': !todayAttendance
+        }">
+          {{ todayAttendance ? (todayAttendance.status || 'CHECKED IN') : 'NOT CHECKED IN' }}
+        </span>
+      </div>
+
+      <div class="clock-buttons">
+        <button
+          *ngIf="!todayAttendance?.checkin"
+          class="btn-punch in"
+          (click)="onCheckIn()"
+          [disabled]="isLoading"
+        >
+          ⏱️ Check In
+        </button>
+
+        <button
+          *ngIf="todayAttendance?.checkin && !todayAttendance?.checkout"
+          class="btn-punch out"
+          (click)="onCheckOut()"
+          [disabled]="isLoading"
+        >
+          🚪 Check Out
+        </button>
+
+        <span *ngIf="todayAttendance?.checkout" class="shift-completed">
+          ✅ Shift Completed ({{ todayAttendance?.checkin }} - {{ todayAttendance?.checkout }})
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="actionMessage" class="feedback-banner" [ngClass]="{'error': actionMessage.isError}">
+    {{ actionMessage.text }}
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="card-grid">
+    <div class="stat-card">
+      <div class="card-header">
+        <span class="card-icon">⏱️</span>
+        <span class="card-title">Today's Attendance</span>
+      </div>
+      <div class="card-value">{{ todayAttendance?.status || 'Pending' }}</div>
+      <div class="card-subtext">
+        <span *ngIf="todayAttendance?.checkin">In: {{ todayAttendance.checkin }}</span>
+        <span *ngIf="todayAttendance?.checkout"> | Out: {{ todayAttendance.checkout }}</span>
+        <span *ngIf="!todayAttendance">Punch in to mark attendance</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="card-header">
+        <span class="card-icon">⏳</span>
+        <span class="card-title">Pending Leaves</span>
+      </div>
+      <div class="card-value text-amber">{{ pendingLeavesCount }}</div>
+      <div class="card-subtext">Awaiting manager approval</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="card-header">
+        <span class="card-icon">📅</span>
+        <span class="card-title">Total Applications</span>
+      </div>
+      <div class="card-value text-blue">{{ totalLeavesCount }}</div>
+      <div class="card-subtext">Leave requests submitted</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="card-header">
+        <span class="card-icon">💳</span>
+        <span class="card-title">Latest Net Pay</span>
+      </div>
+      <div class="card-value text-green">
+        {{ latestPayroll ? ('₹' + latestPayroll.netSalary) : 'N/A' }}
+      </div>
+      <div class="card-subtext">
+        {{ latestPayroll ? (latestPayroll.month + '/' + latestPayroll.year) : 'No payroll processed yet' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Nav Cards -->
+  <div class="quick-nav-section">
+    <div class="quick-nav-card" routerLink="/employee/attendance">
+      <div class="quick-nav-icon">📅</div>
+      <div class="quick-nav-text">
+        <h4>View Attendance Log</h4>
+        <p>Check daily punches, working hours and monthly records</p>
+      </div>
+      <span class="arrow">→</span>
+    </div>
+
+    <div class="quick-nav-card" routerLink="/employee/leaves">
+      <div class="quick-nav-icon">✈️</div>
+      <div class="quick-nav-text">
+        <h4>Apply for Leave</h4>
+        <p>Request time off, manage sick/casual leave and track approvals</p>
+      </div>
+      <span class="arrow">→</span>
+    </div>
+
+    <div class="quick-nav-card" routerLink="/employee/payroll">
+      <div class="quick-nav-icon">💰</div>
+      <div class="quick-nav-text">
+        <h4>Payslips & Salary</h4>
+        <p>Review gross salary, tax deductions and monthly payslips</p>
+      </div>
+      <span class="arrow">→</span>
+    </div>
+  </div>
+
+  <!-- Recent Leaves Table -->
+  <div class="recent-section">
+    <div class="section-header">
+      <h3>Recent Leave Requests</h3>
+      <a routerLink="/employee/leaves" class="view-all-link">View All Leaves →</a>
+    </div>
+
+    <div class="table-wrapper">
+      <table *ngIf="recentLeaves.length > 0; else noLeaves">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Duration</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let leave of recentLeaves">
+            <td class="font-medium text-white">{{ leave.leaveType }}</td>
+            <td>{{ leave.fromDate }} to {{ leave.toDate }}</td>
+            <td>{{ leave.numberOfDays }} day(s)</td>
+            <td class="reason-cell">{{ leave.reason }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="leave.status ? leave.status.toLowerCase() : ''">
+                {{ leave.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noLeaves>
+        <div class="empty-state">
+          <p>No recent leave requests found. <a routerLink="/employee/leaves">Apply for a leave</a></p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

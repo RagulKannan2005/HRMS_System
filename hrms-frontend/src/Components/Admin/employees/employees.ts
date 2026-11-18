@@ -18,6 +18,7 @@ export class Employees implements OnInit {
   filteredEmployeesList: any[] = [];
   departmentsList: any[] = [];
   designationsList: any[] = [];
+  managersList: any[] = [];
 
   searchTerm: string = '';
   selectedDepartment: string = '';
@@ -32,7 +33,7 @@ export class Employees implements OnInit {
   modalErrorMessage: string = '';
 
   newEmployee: any = {
-    roleType: 'MANAGER', // MANAGER or EMPLOYEE
+    roleType: 'EMPLOYEE', // EMPLOYEE or MANAGER
     employeeCode: '',
     employeeName: '',
     email: '',
@@ -43,20 +44,22 @@ export class Employees implements OnInit {
     joiningDate: '',
     departmentId: null,
     designationId: null,
+    managerId: null,
     bankAccountNumber: '',
     ifsc: '',
-    basicSalary: 0,
-    hra: 0,
-    otherAllowance: 0,
-    taxPercent: 0,
-    pfPercent: 0,
+    basicSalary: 30000,
+    hra: 5000,
+    otherAllowance: 2000,
+    taxPercent: 5,
+    pfPercent: 12,
     salaryEffectiveFrom: '',
-  }
+  };
 
   ngOnInit(): void {
     this.loadEmployees();
     this.loadDepartments();
     this.loadDesignations();
+    this.loadManagers();
   }
 
   loadEmployees(): void {
@@ -102,6 +105,18 @@ export class Employees implements OnInit {
     });
   }
 
+  loadManagers(): void {
+    this.adminService.getManagers().subscribe({
+      next: (data) => {
+        this.managersList = data || [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error fetching managers:', err);
+      },
+    });
+  }
+
   filterEmployees(): void {
     let result = [...this.employeesList];
 
@@ -138,7 +153,7 @@ export class Employees implements OnInit {
     this.modalErrorMessage = '';
     const today = new Date().toISOString().split('T')[0];
     this.newEmployee = {
-      roleType: 'MANAGER',
+      roleType: 'EMPLOYEE',
       employeeCode: 'EMP' + Math.floor(1000 + Math.random() * 9000),
       employeeName: '',
       email: '',
@@ -149,6 +164,7 @@ export class Employees implements OnInit {
       joiningDate: today,
       departmentId: this.departmentsList.length > 0 ? this.departmentsList[0].id : null,
       designationId: this.designationsList.length > 0 ? this.designationsList[0].id : null,
+      managerId: null,
       bankAccountNumber: '',
       ifsc: '',
       basicSalary: 30000,
@@ -170,31 +186,97 @@ export class Employees implements OnInit {
   submitEmployee(): void {
     this.modalErrorMessage = '';
 
-    if (
-      !this.newEmployee.employeeCode ||
-      !this.newEmployee.employeeName ||
-      !this.newEmployee.email ||
-      !this.newEmployee.password
-    ) {
-      this.modalErrorMessage = 'Please fill in all mandatory fields (Code, Name, Email, Password).';
+    // Field validations
+    if (!this.newEmployee.employeeCode || this.newEmployee.employeeCode.trim() === '') {
+      this.modalErrorMessage = 'Employee code cannot be empty.';
       return;
     }
-
-    if (!this.newEmployee.departmentId || !this.newEmployee.designationId) {
-      this.modalErrorMessage = 'Please select a valid Department and Designation.';
+    if (!this.newEmployee.employeeName || this.newEmployee.employeeName.trim() === '') {
+      this.modalErrorMessage = 'Employee name cannot be empty.';
+      return;
+    }
+    if (!this.newEmployee.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newEmployee.email.trim())) {
+      this.modalErrorMessage = 'Please enter a valid email address.';
+      return;
+    }
+    if (!this.newEmployee.password || this.newEmployee.password.length < 8) {
+      this.modalErrorMessage = 'Password must be at least 8 characters long.';
+      return;
+    }
+    if (!this.newEmployee.phone || this.newEmployee.phone.trim() === '') {
+      this.modalErrorMessage = 'Phone number cannot be empty.';
+      return;
+    }
+    if (!this.newEmployee.gender) {
+      this.modalErrorMessage = 'Please select a gender.';
+      return;
+    }
+    if (!this.newEmployee.dateOfBirth) {
+      this.modalErrorMessage = 'Date of birth cannot be empty.';
+      return;
+    }
+    if (!this.newEmployee.joiningDate) {
+      this.modalErrorMessage = 'Joining date cannot be empty.';
+      return;
+    }
+    if (!this.newEmployee.departmentId) {
+      this.modalErrorMessage = 'Please select a valid Department.';
+      return;
+    }
+    if (!this.newEmployee.designationId) {
+      this.modalErrorMessage = 'Please select a valid Designation.';
+      return;
+    }
+    if (!this.newEmployee.bankAccountNumber || this.newEmployee.bankAccountNumber.trim() === '') {
+      this.modalErrorMessage = 'Bank account number cannot be empty.';
+      return;
+    }
+    if (this.newEmployee.basicSalary == null || Number(this.newEmployee.basicSalary) < 0) {
+      this.modalErrorMessage = 'Basic salary must be a valid non-negative number.';
+      return;
+    }
+    if (this.newEmployee.hra == null || Number(this.newEmployee.hra) < 0) {
+      this.modalErrorMessage = 'HRA must be a valid non-negative number.';
+      return;
+    }
+    if (this.newEmployee.otherAllowance == null || Number(this.newEmployee.otherAllowance) < 0) {
+      this.modalErrorMessage = 'Other allowance must be a valid non-negative number.';
+      return;
+    }
+    if (this.newEmployee.taxPercent == null || Number(this.newEmployee.taxPercent) < 0) {
+      this.modalErrorMessage = 'Tax percent must be a valid non-negative number.';
+      return;
+    }
+    if (this.newEmployee.pfPercent == null || Number(this.newEmployee.pfPercent) < 0) {
+      this.modalErrorMessage = 'PF percent must be a valid non-negative number.';
       return;
     }
 
     this.isSubmitting = true;
+    const today = new Date().toISOString().split('T')[0];
 
-    // Convert string IDs to numbers if needed
-    const payload = {
-      ...this.newEmployee,
+    // Payload construction with appropriate types and no empty string dates
+    const payload: any = {
+      employeeCode: this.newEmployee.employeeCode.trim(),
+      employeeName: this.newEmployee.employeeName.trim(),
+      email: this.newEmployee.email.trim(),
+      password: this.newEmployee.password,
+      phone: this.newEmployee.phone.trim(),
+      gender: this.newEmployee.gender,
+      dateOfBirth: this.newEmployee.dateOfBirth,
+      joiningDate: this.newEmployee.joiningDate,
+      bankAccountNumber: this.newEmployee.bankAccountNumber.trim(),
+      ifsc: this.newEmployee.ifsc && this.newEmployee.ifsc.trim() !== '' ? this.newEmployee.ifsc.trim() : null,
       departmentId: Number(this.newEmployee.departmentId),
       designationId: Number(this.newEmployee.designationId),
+      managerId: this.newEmployee.managerId ? Number(this.newEmployee.managerId) : null,
+      basicSalary: Number(this.newEmployee.basicSalary),
+      hra: Number(this.newEmployee.hra),
+      otherAllowance: Number(this.newEmployee.otherAllowance),
+      taxPercent: Number(this.newEmployee.taxPercent),
+      pfPercent: Number(this.newEmployee.pfPercent),
+      salaryEffectiveFrom: this.newEmployee.salaryEffectiveFrom || this.newEmployee.joiningDate || today,
     };
-
-    delete payload.roleType;
 
     const request$ =
       this.newEmployee.roleType === 'MANAGER'
@@ -205,15 +287,35 @@ export class Employees implements OnInit {
       next: (res) => {
         this.isSubmitting = false;
         this.closeModal();
-        this.successMessage = `Successfully added ${res.employeeName || 'employee'}!`;
+        this.successMessage = `Successfully added ${res.employeeName || 'record'}!`;
         setTimeout(() => (this.successMessage = ''), 4000);
         this.loadEmployees();
+        this.loadManagers();
       },
       error: (err) => {
-        console.error('Error creating employee:', err);
+        console.error('Error creating record:', err);
         this.isSubmitting = false;
-        this.modalErrorMessage =
-          err.error?.message || err.error || 'Failed to create employee. Please check inputs.';
+        if (err.error && typeof err.error === 'object') {
+          if (err.error.error) {
+            this.modalErrorMessage = err.error.error;
+          } else if (err.error.message) {
+            this.modalErrorMessage = err.error.message;
+          } else {
+            // Spring Boot validation error map: { fieldName: errorMessage }
+            const entries = Object.entries(err.error);
+            if (entries.length > 0) {
+              this.modalErrorMessage = entries
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join(' | ');
+            } else {
+              this.modalErrorMessage = 'Server validation failed. Please check inputs.';
+            }
+          }
+        } else if (typeof err.error === 'string') {
+          this.modalErrorMessage = err.error;
+        } else {
+          this.modalErrorMessage = 'Failed to create record. Please check inputs.';
+        }
         this.cdr.detectChanges();
       },
     });

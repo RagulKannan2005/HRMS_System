@@ -1,5 +1,6 @@
 package com.example.hrms.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -59,18 +60,18 @@ public class ManagerService {
         @Transactional
         public EmployeeResponseDto createEmployee(EmployeeRequestDto request) {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                User managerUser = (User) authentication.getPrincipal();
-                if (managerUser == null) {
-                        throw new RuntimeException("Manager not found");
+                User currentUser = null;
+                if (authentication != null && authentication.getPrincipal() instanceof User) {
+                        currentUser = (User) authentication.getPrincipal();
                 }
-                Long managerEmployeeId = managerUser.getEmployeeId();
 
                 Employee managerEmployee = null;
-                if (managerEmployeeId != null) {
-                        managerEmployee = employeerepo.findById(managerEmployeeId)
+                if (request.getManagerId() != null) {
+                        managerEmployee = employeerepo.findById(request.getManagerId())
                                         .orElseThrow(() -> new RuntimeException(
-                                                        "Manager employee profile not found with id: "
-                                                                        + managerEmployeeId));
+                                                        "Manager employee profile not found with id: " + request.getManagerId()));
+                } else if (currentUser != null && currentUser.getEmployeeId() != null) {
+                        managerEmployee = employeerepo.findById(currentUser.getEmployeeId()).orElse(null);
                 }
 
                 if (employeerepo.existsByEmployeeCode(request.getEmployeeCode())) {
@@ -108,12 +109,12 @@ public class ManagerService {
 
                 EmployeeSalary salary = EmployeeSalary.builder()
                                 .employee(savedEmployee)
-                                .basicSalary(request.getBasicSalary())
-                                .hra(request.getHra())
-                                .otherAllowance(request.getOtherAllowance())
-                                .taxPercent(request.getTaxPercent())
-                                .pfPercent(request.getPfPercent())
-                                .effectiveFrom(request.getSalaryEffectiveFrom())
+                                .basicSalary(request.getBasicSalary() != null ? request.getBasicSalary() : BigDecimal.ZERO)
+                                .hra(request.getHra() != null ? request.getHra() : BigDecimal.ZERO)
+                                .otherAllowance(request.getOtherAllowance() != null ? request.getOtherAllowance() : BigDecimal.ZERO)
+                                .taxPercent(request.getTaxPercent() != null ? request.getTaxPercent() : BigDecimal.ZERO)
+                                .pfPercent(request.getPfPercent() != null ? request.getPfPercent() : BigDecimal.ZERO)
+                                .effectiveFrom(request.getSalaryEffectiveFrom() != null ? request.getSalaryEffectiveFrom() : request.getJoiningDate())
                                 .build();
 
                 employeeSalaryrepo.save(salary);
@@ -167,6 +168,7 @@ public class ManagerService {
                 List<Employee> employees = employeerepo.findByRole(Role.MANAGER);
                 return employees.stream().map(this::toManagerResponseDto).collect(Collectors.toList());
         }
+
         public List<EmployeeResponseDto> getAllEmployee() {
                 return employeerepo.findAll().stream().map(this::toEmployeeResponseDto).collect(Collectors.toList());
         }

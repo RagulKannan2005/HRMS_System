@@ -69,13 +69,16 @@ public class LeaveService {
                 employeeId,
                 dto.getLeaveType(),
                 year)
-                .orElseThrow(
-                        () -> new RuntimeException("No leave balance found for employeeId: "
-                                + employeeId
-                                + ", leaveType: "
-                                + dto.getLeaveType()
-                                + ", year: "
-                                + year));
+                .orElseGet(() -> {
+                    LeaveBalance newBalance = LeaveBalance.builder()
+                            .employee(employee)
+                            .leaveType(dto.getLeaveType())
+                            .totalDays(dto.getLeaveType().getAnnualLimit())
+                            .usedDays(0)
+                            .year(year)
+                            .build();
+                    return leaveBalancerepo.save(newBalance);
+                });
 
         int remainingDays = balance.getTotalDays() - balance.getUsedDays();
 

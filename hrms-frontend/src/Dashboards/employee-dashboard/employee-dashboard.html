@@ -1,1 +1,53 @@
-<p>employee-dashboard works!</p>
+<div class="contianer">
+  <aside class="sidebar">
+    <div class="logo-container">
+      <div class="logo-text">
+        <h3>HRMS</h3>
+      </div>
+      <div class="logo-subtitle">
+        <span>Employee Portal</span>
+      </div>
+    </div>
+
+    <div class="user-badge">
+      <div class="user-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ username }}</span>
+        <span class="user-role">EMPLOYEE</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">MAIN MENU</div>
+
+      <div class="nav-links" routerLink="/employee/employee-home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span class="icon"><img src="assets/icons/dashboard (1).png" alt="Dashboard"></span>
+        <span class="text">Dashboard</span>
+      </div>
+
+      <div class="nav-links" routerLink="/employee/attendance" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/machine.png" alt="Attendance"></span>
+        <span class="text">Attendance</span>
+      </div>
+
+      <div class="nav-links" routerLink="/employee/leaves" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/work.png" alt="Leaves"></span>
+        <span class="text">Leaves</span>
+      </div>
+
+      <div class="nav-links" routerLink="/employee/payroll" routerLinkActive="active">
+        <span class="icon"><img src="assets/icons/sponsor.png" alt="Payroll"></span>
+        <span class="text">My Payroll</span>
+      </div>
+
+      <div class="nav-links logout-link" (click)="onLogout()">
+        <span class="icon"><img src="assets/icons/power-off.png" alt="Logout"></span>
+        <span class="text">Logout</span>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

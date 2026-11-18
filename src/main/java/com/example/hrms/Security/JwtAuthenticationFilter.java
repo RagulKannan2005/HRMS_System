@@ -54,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
+            System.err.println("=== JWT AUTH ERROR: " + e.getClass().getSimpleName() + " -> " + e.getMessage());
             logger.warn("cannot set user authentication: ", e);
         }
         filterChain.doFilter(request, response);
