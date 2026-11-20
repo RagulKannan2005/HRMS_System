@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ManagerService } from '../../../service/manager.service';
 
 @Component({
@@ -53,28 +55,27 @@ export class ManagerPayroll implements OnInit {
 
   loadTeamAndSalaries(): void {
     this.isLoading = true;
-    this.managerService.getMyTeam().subscribe({
-      next: (team) => {
-        this.teamMembers = team || [];
+    this.cdr.markForCheck();
+
+    forkJoin({
+      team: this.managerService.getMyTeam().pipe(catchError(() => of([]))),
+      salaries: this.managerService.getAllSalaries().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        this.teamMembers = res.team || [];
+        this.salaries = res.salaries || [];
         if (this.teamMembers.length > 0) {
           this.selectedMemberId = this.teamMembers[0].id;
           this.loadPayrollsForSelected();
         }
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
         console.error('Error fetching team for payroll:', err);
+        this.cdr.markForCheck();
       },
-    });
-
-    this.managerService.getAllSalaries().subscribe({
-      next: (salaries) => {
-        this.salaries = salaries || [];
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error fetching salaries:', err),
     });
   }
 
@@ -84,11 +85,11 @@ export class ManagerPayroll implements OnInit {
     this.managerService.getPayrollByEmployeeId(this.selectedMemberId).subscribe({
       next: (data) => {
         this.selectedMemberPayrolls = data || [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: () => {
         this.selectedMemberPayrolls = [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -106,6 +107,7 @@ export class ManagerPayroll implements OnInit {
 
     this.isGenerating = true;
     this.toastMessage = null;
+    this.cdr.markForCheck();
 
     this.managerService
       .generatePayroll(this.selectedMemberId, this.selectedYear, this.selectedMonth)
@@ -117,11 +119,13 @@ export class ManagerPayroll implements OnInit {
             false,
           );
           this.loadPayrollsForSelected();
+          this.cdr.markForCheck();
         },
         error: (err) => {
           this.isGenerating = false;
           const msg = err?.error?.message || err?.error?.error || 'Failed to generate payroll';
           this.showToast(typeof msg === 'string' ? msg : 'Payroll generation failed', true);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -129,11 +133,13 @@ export class ManagerPayroll implements OnInit {
   openPayslip(payroll: any): void {
     this.selectedPayslip = payroll;
     this.showPayslipModal = true;
+    this.cdr.markForCheck();
   }
 
   closePayslip(): void {
     this.showPayslipModal = false;
     this.selectedPayslip = null;
+    this.cdr.markForCheck();
   }
 
   printPayslip(): void {
@@ -148,10 +154,10 @@ export class ManagerPayroll implements OnInit {
   private showToast(msg: string, isError: boolean): void {
     this.toastMessage = msg;
     this.toastError = isError;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.toastMessage = null;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }, 4500);
   }
 }

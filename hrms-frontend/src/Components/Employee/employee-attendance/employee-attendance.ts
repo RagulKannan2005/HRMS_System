@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { EmployeePortalService } from '../../../service/employee-portal';
 
 @Component({
@@ -12,6 +14,7 @@ import { EmployeePortalService } from '../../../service/employee-portal';
 })
 export class EmployeeAttendance implements OnInit {
   private portalService = inject(EmployeePortalService);
+  private cdr = inject(ChangeDetectorRef);
 
   todayAttendance: any = null;
   attendanceRecords: any[] = [];
@@ -26,8 +29,7 @@ export class EmployeeAttendance implements OnInit {
   banner: { message: string; isError: boolean } | null = null;
 
   ngOnInit(): void {
-    this.loadTodayStatus();
-    this.loadMonthAttendance();
+    this.loadInitialData();
   }
 
   getCurrentYearMonth(): string {
@@ -44,9 +46,23 @@ export class EmployeeAttendance implements OnInit {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  loadTodayStatus(): void {
-    this.portalService.getTodayAttendance(this.getTodayIsoString()).subscribe({
-      next: (res: any) => {
+  loadInitialData(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
+
+    const queryDate = `${this.selectedMonth}-01`;
+
+    forkJoin({
+      today: this.portalService
+        .getTodayAttendance(this.getTodayIsoString())
+        .pipe(catchError(() => of(null))),
+      month: this.portalService
+        .getMonthAttendance(queryDate)
+        .pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (results) => {
+        // Today
+        const res = results.today;
         if (Array.isArray(res) && res.length > 0) {
           this.todayAttendance = res[0];
         } else if (res && !Array.isArray(res)) {
@@ -54,35 +70,52 @@ export class EmployeeAttendance implements OnInit {
         } else {
           this.todayAttendance = null;
         }
+
+        // Month
+        this.attendanceRecords = Array.isArray(results.month) ? results.month : [];
+        this.calculateStats();
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.todayAttendance = null;
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   loadMonthAttendance(): void {
     this.isLoading = true;
+    this.cdr.markForCheck();
     const queryDate = `${this.selectedMonth}-01`;
+
     this.portalService.getMonthAttendance(queryDate).subscribe({
       next: (records: any[]) => {
         this.isLoading = false;
         this.attendanceRecords = Array.isArray(records) ? records : [];
         this.calculateStats();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
         this.attendanceRecords = [];
         console.error('Failed to load month attendance', err);
+        this.cdr.markForCheck();
       },
     });
   }
 
   calculateStats(): void {
     this.totalDays = this.attendanceRecords.length;
-    this.presentCount = this.attendanceRecords.filter((r) => r.status === 'PRESENT').length;
-    this.absentCount = this.attendanceRecords.filter((r) => r.status === 'ABSENT').length;
-    this.leaveCount = this.attendanceRecords.filter((r) => r.status === 'ON_LEAVE').length;
+    this.presentCount = this.attendanceRecords.filter(
+      (r) => r.status === 'PRESENT'
+    ).length;
+    this.absentCount = this.attendanceRecords.filter(
+      (r) => r.status === 'ABSENT'
+    ).length;
+    this.leaveCount = this.attendanceRecords.filter(
+      (r) => r.status === 'ON_LEAVE'
+    ).length;
   }
 
   onMonthChange(): void {
@@ -92,6 +125,8 @@ export class EmployeeAttendance implements OnInit {
   onCheckIn(): void {
     this.isLoading = true;
     this.banner = null;
+    this.cdr.markForCheck();
+
     this.portalService.checkIn().subscribe({
       next: (res) => {
         this.isLoading = false;
@@ -103,6 +138,7 @@ export class EmployeeAttendance implements OnInit {
         this.isLoading = false;
         const msg = err?.error?.message || err?.error || 'Check-in failed.';
         this.showBanner(typeof msg === 'string' ? msg : 'Check-in failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -110,6 +146,8 @@ export class EmployeeAttendance implements OnInit {
   onCheckOut(): void {
     this.isLoading = true;
     this.banner = null;
+    this.cdr.markForCheck();
+
     this.portalService.checkOut().subscribe({
       next: (res) => {
         this.isLoading = false;
@@ -121,14 +159,17 @@ export class EmployeeAttendance implements OnInit {
         this.isLoading = false;
         const msg = err?.error?.message || err?.error || 'Check-out failed.';
         this.showBanner(typeof msg === 'string' ? msg : 'Check-out failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
 
   private showBanner(message: string, isError: boolean): void {
     this.banner = { message, isError };
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.banner = null;
+      this.cdr.markForCheck();
     }, 4000);
   }
 }

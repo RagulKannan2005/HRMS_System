@@ -1,7 +1,9 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ManagerService, EmployeeCreatePayload } from '../../../service/manager.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { ManagerService } from '../../../service/manager.service';
 
 @Component({
   selector: 'app-manager-team',
@@ -16,24 +18,24 @@ export class ManagerTeam implements OnInit {
 
   teamMembers: any[] = [];
   filteredMembers: any[] = [];
-  searchQuery: string = '';
+  selectedMember: any = null;
+  memberBalances: any[] = [];
+  memberSalary: any = null;
 
   departments: any[] = [];
   designations: any[] = [];
 
   isLoading: boolean = false;
-  selectedMember: any = null;
-  memberBalances: any[] = [];
-  memberSalary: any = null;
+  searchQuery: string = '';
 
-  // Onboard Employee Modal
+  // Modal
   showOnboardModal: boolean = false;
   isSubmitting: boolean = false;
   formError: string | null = null;
   formSuccess: string | null = null;
 
-  newEmployee: EmployeeCreatePayload = {
-    employeeCode: '',
+  newEmployee: any = {
+    employeeCode: 'EMP-' + Math.floor(1000 + Math.random() * 9000),
     employeeName: '',
     email: '',
     phone: '',
@@ -53,45 +55,55 @@ export class ManagerTeam implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadTeam();
-    this.loadMetadata();
+    this.loadInitialData();
+  }
+
+  loadInitialData(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
+
+    forkJoin({
+      team: this.managerService.getMyTeam().pipe(catchError(() => of([]))),
+      depts: this.managerService.getDepartments().pipe(catchError(() => of([]))),
+      desigs: this.managerService.getDesignations().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        this.teamMembers = res.team || [];
+        this.applyFilter();
+        this.departments = res.depts || [];
+        if (this.departments.length > 0 && !this.newEmployee.departmentId) {
+          this.newEmployee.departmentId = this.departments[0].id;
+        }
+        this.designations = res.desigs || [];
+        if (this.designations.length > 0 && !this.newEmployee.designationId) {
+          this.newEmployee.designationId = this.designations[0].id;
+        }
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error loading manager team data:', err);
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   loadTeam(): void {
     this.isLoading = true;
+    this.cdr.markForCheck();
     this.managerService.getMyTeam().subscribe({
       next: (data) => {
         this.isLoading = false;
         this.teamMembers = data || [];
         this.applyFilter();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
         console.error('Error fetching team:', err);
+        this.cdr.markForCheck();
       },
-    });
-  }
-
-  loadMetadata(): void {
-    this.managerService.getDepartments().subscribe({
-      next: (depts) => {
-        this.departments = depts || [];
-        if (this.departments.length > 0 && !this.newEmployee.departmentId) {
-          this.newEmployee.departmentId = this.departments[0].id;
-        }
-      },
-      error: (err) => console.error('Error fetching departments:', err),
-    });
-
-    this.managerService.getDesignations().subscribe({
-      next: (desigs) => {
-        this.designations = desigs || [];
-        if (this.designations.length > 0 && !this.newEmployee.designationId) {
-          this.newEmployee.designationId = this.designations[0].id;
-        }
-      },
-      error: (err) => console.error('Error fetching designations:', err),
     });
   }
 
@@ -109,28 +121,33 @@ export class ManagerTeam implements OnInit {
           (m.departmentName || '').toLowerCase().includes(q),
       );
     }
+    this.cdr.markForCheck();
   }
 
   onSelectMember(member: any): void {
     this.selectedMember = member;
     this.memberBalances = [];
     this.memberSalary = null;
+    this.cdr.markForCheck();
 
     if (member?.id) {
-      this.managerService.getEmployeeLeaveBalance(member.id).subscribe({
-        next: (balances) => {
-          this.memberBalances = balances || [];
-          this.cdr.detectChanges();
+      forkJoin({
+        balances: this.managerService
+          .getEmployeeLeaveBalance(member.id)
+          .pipe(catchError(() => of([]))),
+        salary: this.managerService
+          .getSalaryByEmployeeId(member.id)
+          .pipe(catchError(() => of(null))),
+      }).subscribe({
+        next: (res) => {
+          this.memberBalances = res.balances || [];
+          this.memberSalary = Array.isArray(res.salary) ? res.salary[0] : res.salary;
+          this.cdr.markForCheck();
         },
-        error: (err) => console.error('Error loading balances:', err),
-      });
-
-      this.managerService.getSalaryByEmployeeId(member.id).subscribe({
-        next: (salary) => {
-          this.memberSalary = Array.isArray(salary) ? salary[0] : salary;
-          this.cdr.detectChanges();
+        error: (err) => {
+          console.error('Error loading member details:', err);
+          this.cdr.markForCheck();
         },
-        error: (err) => console.error('Error loading salary:', err),
       });
     }
   }
@@ -158,10 +175,12 @@ export class ManagerTeam implements OnInit {
       password: '',
     };
     this.showOnboardModal = true;
+    this.cdr.markForCheck();
   }
 
   closeOnboardModal(): void {
     this.showOnboardModal = false;
+    this.cdr.markForCheck();
   }
 
   onSubmitOnboard(): void {
@@ -170,15 +189,19 @@ export class ManagerTeam implements OnInit {
 
     if (!this.newEmployee.employeeName || !this.newEmployee.email || !this.newEmployee.password) {
       this.formError = 'Please fill out all required fields: Name, Email, and Password.';
+      this.cdr.markForCheck();
       return;
     }
 
     this.isSubmitting = true;
+    this.cdr.markForCheck();
+
     this.managerService.createEmployee(this.newEmployee).subscribe({
       next: (res) => {
         this.isSubmitting = false;
         this.formSuccess = `Employee ${res.employeeName || ''} onboarded successfully!`;
         this.loadTeam();
+        this.cdr.markForCheck();
         setTimeout(() => {
           this.closeOnboardModal();
         }, 1200);
@@ -186,6 +209,7 @@ export class ManagerTeam implements OnInit {
       error: (err) => {
         this.isSubmitting = false;
         this.formError = err?.error?.message || err?.error?.error || 'Failed to onboard employee';
+        this.cdr.markForCheck();
       },
     });
   }

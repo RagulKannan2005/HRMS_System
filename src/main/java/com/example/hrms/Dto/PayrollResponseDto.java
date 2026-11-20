@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 public class PayrollResponseDto {
     private Long id;
     private String employeeName;
+    private String employeeCode;
+    private String departmentName;
+    private String designationTitle;
     private Integer month;
     private Integer year;
     private BigDecimal grossSalary;

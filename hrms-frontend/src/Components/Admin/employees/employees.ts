@@ -1,6 +1,8 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AdminService } from '../../../service/admin.service';
 
 @Component({
@@ -56,27 +58,54 @@ export class Employees implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadEmployees();
-    this.loadDepartments();
-    this.loadDesignations();
-    this.loadManagers();
+    this.loadAllData();
+  }
+
+  loadAllData(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+
+    forkJoin({
+      employees: this.adminService.getAllEmployees().pipe(catchError(() => of([]))),
+      departments: this.adminService.getDepartments().pipe(catchError(() => of([]))),
+      designations: this.adminService.getDesignations().pipe(catchError(() => of([]))),
+      managers: this.adminService.getManagers().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        this.employeesList = res.employees || [];
+        this.departmentsList = res.departments || [];
+        this.designationsList = res.designations || [];
+        this.managersList = res.managers || [];
+        this.filterEmployees();
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error loading employees initial data:', err);
+        this.errorMessage = 'Failed to load employees. Please try again.';
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   loadEmployees(): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.cdr.markForCheck();
     this.adminService.getAllEmployees().subscribe({
       next: (data) => {
         this.employeesList = data || [];
         this.filterEmployees();
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching employees:', err);
         this.errorMessage = 'Failed to load employees. Please try again.';
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -85,7 +114,7 @@ export class Employees implements OnInit {
     this.adminService.getDepartments().subscribe({
       next: (data) => {
         this.departmentsList = data || [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching departments:', err);
@@ -97,7 +126,7 @@ export class Employees implements OnInit {
     this.adminService.getDesignations().subscribe({
       next: (data) => {
         this.designationsList = data || [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching designations:', err);
@@ -109,7 +138,7 @@ export class Employees implements OnInit {
     this.adminService.getManagers().subscribe({
       next: (data) => {
         this.managersList = data || [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching managers:', err);
@@ -146,7 +175,7 @@ export class Employees implements OnInit {
     }
 
     this.filteredEmployeesList = result;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   openModal(): void {
@@ -175,12 +204,12 @@ export class Employees implements OnInit {
       salaryEffectiveFrom: today,
     };
     this.isModalOpen = true;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   closeModal(): void {
     this.isModalOpen = false;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   submitEmployee(): void {
@@ -316,7 +345,7 @@ export class Employees implements OnInit {
         } else {
           this.modalErrorMessage = 'Failed to create record. Please check inputs.';
         }
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }

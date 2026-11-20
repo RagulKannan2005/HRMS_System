@@ -43,12 +43,12 @@ export class Designation implements OnInit {
         this.designations = data || [];
         this.filterDesignations();
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.errorMessage = err.message || 'Failed to load designations';
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -63,6 +63,7 @@ export class Designation implements OnInit {
         return titleStr.toLowerCase().includes(term);
       });
     }
+    this.cdr.markForCheck();
   }
 
   openModel(): void {
@@ -73,7 +74,7 @@ export class Designation implements OnInit {
     this.modelErrorMessage = '';
     this.newDesignation = { title: '' };
     this.isModelOpen = true;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   closeModel(): void {
@@ -82,7 +83,7 @@ export class Designation implements OnInit {
 
   closeModal(): void {
     this.isModelOpen = false;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   submitDesignation(): void {
@@ -93,6 +94,7 @@ export class Designation implements OnInit {
       return;
     }
     this.isSubmitting = true;
+    this.cdr.markForCheck();
     const payload = {
       title: nameVal.trim(),
     };
@@ -107,7 +109,7 @@ export class Designation implements OnInit {
       error: (err) => {
         this.isSubmitting = false;
         this.modelErrorMessage = err.error?.message || err.message || 'Failed to create designation';
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }

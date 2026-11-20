@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmployeePortalService } from '../../../service/employee-portal';
@@ -13,6 +13,7 @@ import { EmployeePortalService } from '../../../service/employee-portal';
 export class EmployeeLeaves implements OnInit {
   private fb = inject(FormBuilder);
   private portalService = inject(EmployeePortalService);
+  private cdr = inject(ChangeDetectorRef);
 
   leaves: any[] = [];
   leaveTypes = ['CASUAL', 'SICK', 'EARNED', 'MATERNITY'];
@@ -36,9 +37,11 @@ export class EmployeeLeaves implements OnInit {
     this.portalService.getMyLeaves().subscribe({
       next: (data: any[]) => {
         this.leaves = Array.isArray(data) ? data : [];
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to load leaves', err);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -48,6 +51,7 @@ export class EmployeeLeaves implements OnInit {
     if (!show) {
       this.leaveForm.reset({ leaveType: 'CASUAL' });
     }
+    this.cdr.markForCheck();
   }
 
   onSubmitLeave(): void {
@@ -64,6 +68,8 @@ export class EmployeeLeaves implements OnInit {
     }
 
     this.isSubmitting = true;
+    this.cdr.markForCheck();
+
     this.portalService
       .applyLeave({ leaveType, fromDate, toDate, reason })
       .subscribe({
@@ -73,6 +79,7 @@ export class EmployeeLeaves implements OnInit {
           this.leaveForm.reset({ leaveType: 'CASUAL' });
           this.showBanner('Leave application submitted successfully!', false);
           this.loadMyLeaves();
+          this.cdr.markForCheck();
         },
         error: (err) => {
           this.isSubmitting = false;
@@ -91,6 +98,7 @@ export class EmployeeLeaves implements OnInit {
             msg = values || 'Bad request error';
           }
           this.showBanner(msg, true);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -104,18 +112,26 @@ export class EmployeeLeaves implements OnInit {
       next: () => {
         this.showBanner('Leave cancelled successfully!', false);
         this.loadMyLeaves();
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        const msg = err?.error?.message || err?.error || 'Failed to cancel leave.';
-        this.showBanner(typeof msg === 'string' ? msg : 'Failed to cancel leave', true);
+        const msg =
+          err?.error?.message || err?.error || 'Failed to cancel leave.';
+        this.showBanner(
+          typeof msg === 'string' ? msg : 'Failed to cancel leave',
+          true
+        );
+        this.cdr.markForCheck();
       },
     });
   }
 
   private showBanner(message: string, isError: boolean): void {
     this.banner = { message, isError };
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.banner = null;
+      this.cdr.markForCheck();
     }, 4000);
   }
 }

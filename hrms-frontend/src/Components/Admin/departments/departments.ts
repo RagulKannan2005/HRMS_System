@@ -43,12 +43,12 @@ export class Departments implements OnInit {
         this.departments = data || [];
         this.filterDepartments();
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.errorMessage = err.message || 'Failed to load departments';
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -62,18 +62,19 @@ export class Departments implements OnInit {
         (dept) => dept.name && dept.name.toLowerCase().includes(term)
       );
     }
+    this.cdr.markForCheck();
   }
 
   openModal(): void {
     this.modalErrorMessage = '';
     this.newDepartment = { name: '' };
     this.isModalOpen = true;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   closeModal(): void {
     this.isModalOpen = false;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   submitDepartment(): void {
@@ -84,6 +85,7 @@ export class Departments implements OnInit {
     }
 
     this.isSubmitting = true;
+    this.cdr.markForCheck();
     this.adminService.createDepartment({ name: this.newDepartment.name.trim() }).subscribe({
       next: (res) => {
         this.isSubmitting = false;
@@ -95,7 +97,7 @@ export class Departments implements OnInit {
       error: (err) => {
         this.isSubmitting = false;
         this.modalErrorMessage = err.error?.message || err.error || 'Failed to create department.';
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }

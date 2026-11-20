@@ -1,6 +1,8 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AttendanceService } from '../../../service/Attendance.service';
 import { AdminService } from '../../../service/admin.service';
 
@@ -31,50 +33,58 @@ export class AdminAttendance implements OnInit {
   attendance: any[] = [];
   selectedDate: string = '';
   selectedStatus: string = 'all';
+  isLoading = false;
 
   ngOnInit(): void {
-    this.loadAllattendance();
-    this.loadMetrics();
+    this.loadInitialData();
   }
 
-  loadMetrics(): void {
-    this.adminService.getAllUsers().subscribe({
-      next: (users) => {
-        this.totalEmployees = users?.length || 0;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error fetching users:', err),
-    });
+  loadInitialData(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
 
-    this.adminService.getDepartments().subscribe({
-      next: (depts) => {
-        this.totalDepartments = depts?.length || 0;
-        this.cdr.detectChanges();
+    forkJoin({
+      attendance: this.attendanceService.getalldata().pipe(catchError(() => of([]))),
+      users: this.adminService.getAllUsers().pipe(catchError(() => of([]))),
+      departments: this.adminService.getDepartments().pipe(catchError(() => of([]))),
+      leaves: this.adminService.getPendingLeaves().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        this.attendance = res.attendance || [];
+        this.totalemployeePresent = this.attendance.filter(
+          (u) => u.status === AttendanceStatus.PRESENT
+        ).length;
+        this.totalEmployees = res.users?.length || 0;
+        this.totalDepartments = res.departments?.length || 0;
+        this.totalLeaves = res.leaves?.length || 0;
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error fetching departments:', err),
-    });
-
-    this.adminService.getPendingLeaves().subscribe({
-      next: (leaves) => {
-        this.totalLeaves = leaves?.length || 0;
-        this.cdr.detectChanges();
+      error: (err) => {
+        console.error('Error loading attendance initial data:', err);
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error fetching pending leaves:', err),
     });
   }
 
   loadAllattendance(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
     this.attendanceService.getalldata().subscribe({
       next: (data) => {
-        console.log('Fetched attendance data:', data);
         this.attendance = data || [];
         this.totalemployeePresent = this.attendance.filter(
-          (u) => u.status === AttendanceStatus.PRESENT,
+          (u) => u.status === AttendanceStatus.PRESENT
         ).length;
-
-        this.cdr.detectChanges();
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error fetching attendance records:', err),
+      error: (err) => {
+        console.error('Error fetching attendance records:', err);
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -85,16 +95,23 @@ export class AdminAttendance implements OnInit {
           ? AttendanceStatus.ON_LEAVE
           : (this.selectedStatus.toUpperCase() as AttendanceStatus);
 
+      this.isLoading = true;
+      this.cdr.markForCheck();
+
       this.attendanceService.getfilterdata(this.selectedDate, statusValue).subscribe({
         next: (data) => {
           this.attendance = data || [];
-          this.cdr.detectChanges();
+          this.isLoading = false;
+          this.cdr.markForCheck();
         },
-        error: (err) => console.error('Error filtering attendance:', err),
+        error: (err) => {
+          console.error('Error filtering attendance:', err);
+          this.isLoading = false;
+          this.cdr.markForCheck();
+        },
       });
     } else {
       this.loadAllattendance();
     }
   }
 }
-

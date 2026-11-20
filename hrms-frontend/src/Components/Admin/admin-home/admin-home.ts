@@ -1,5 +1,7 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AdminService } from '../../../service/admin.service';
 
 @Component({
@@ -18,49 +20,45 @@ export class AdminHome implements OnInit {
   totalDepartments = 0;
   totalLeaves = 0;
   pendingLeavesList: any[] = [];
+  isLoading = false;
 
   ngOnInit(): void {
     this.loadDashboardMetrics();
   }
 
   loadDashboardMetrics(): void {
-    this.adminService.getAllUsers().subscribe({
-      next: (users) => {
-        console.log('Fetched users:', users);
-        this.totalEmployees = users?.length || 0;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error fetching users:', err),
-    });
+    this.isLoading = true;
+    this.cdr.markForCheck();
 
-    this.adminService.getManagers().subscribe({
-      next: (managers) => {
-        console.log('Fetched managers:', managers);
-        this.totalManagers = managers?.length || 0;
-        this.cdr.detectChanges();
+    forkJoin({
+      users: this.adminService.getAllUsers().pipe(catchError(() => of([]))),
+      managers: this.adminService.getManagers().pipe(catchError(() => of([]))),
+      departments: this.adminService.getDepartments().pipe(catchError(() => of([]))),
+      leaves: this.adminService.getPendingLeaves().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        this.totalEmployees = res.users?.length || 0;
+        this.totalManagers = res.managers?.length || 0;
+        this.totalDepartments = res.departments?.length || 0;
+        this.pendingLeavesList = res.leaves || [];
+        this.totalLeaves = this.pendingLeavesList.length;
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error fetching managers:', err),
-    });
-
-    this.adminService.getDepartments().subscribe({
-      next: (depts) => {
-        console.log('Fetched departments:', depts);
-        this.totalDepartments = depts?.length || 0;
-        this.cdr.detectChanges();
+      error: (err) => {
+        console.error('Error fetching dashboard metrics:', err);
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error fetching departments:', err),
     });
-
-    this.loadPendingLeaves();
   }
 
   loadPendingLeaves(): void {
     this.adminService.getPendingLeaves().subscribe({
       next: (leaves) => {
-        console.log('Fetched pending leaves:', leaves);
         this.pendingLeavesList = leaves || [];
         this.totalLeaves = this.pendingLeavesList.length;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Error fetching pending leaves:', err),
     });

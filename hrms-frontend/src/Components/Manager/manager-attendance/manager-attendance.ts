@@ -46,11 +46,12 @@ export class ManagerAttendance implements OnInit {
         this.attendanceRecords = data || [];
         this.applyFilter();
         this.calculateMetrics();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
         console.error('Error fetching attendance:', err);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -77,6 +78,7 @@ export class ManagerAttendance implements OnInit {
     }
 
     this.filteredRecords = result;
+    this.cdr.markForCheck();
   }
 
   calculateMetrics(): void {

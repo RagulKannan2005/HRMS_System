@@ -1,139 +1,306 @@
 <div class="payroll-page">
+  <!-- Header -->
   <div class="page-header">
-    <div>
-      <h2>My Payroll & Payslips</h2>
-      <p class="subtitle">Review salary breakdowns, tax deductions, and download payslips</p>
+    <div class="header-left">
+      <div class="header-icon">💳</div>
+      <div>
+        <h2>My Payroll & Payslips</h2>
+        <p class="subtitle">Review your compensation, monthly earnings, deductions, and official payslips</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" (click)="loadPayroll()" [disabled]="isLoading" title="Refresh Payroll">
+        <span [class.spin]="isLoading">🔄</span> Refresh
+      </button>
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div class="cards-grid" *ngIf="payrolls.length > 0">
-    <div class="summary-card">
-      <span class="card-label">Latest Net Pay</span>
-      <span class="card-num text-green">₹{{ payrolls[0].netSalary | number }}</span>
-      <span class="card-sub">{{ getMonthName(payrolls[0].month) }} {{ payrolls[0].year }}</span>
-    </div>
-    <div class="summary-card">
-      <span class="card-label">Gross Salary</span>
-      <span class="card-num text-blue">₹{{ payrolls[0].grossSalary | number }}</span>
-      <span class="card-sub">Before deductions</span>
-    </div>
-    <div class="summary-card">
-      <span class="card-label">Total Deductions</span>
-      <span class="card-num text-red">₹{{ (payrolls[0].totalDeduction || payrolls[0].deductions) | number }}</span>
-      <span class="card-sub">PF, Tax & Leaves</span>
-    </div>
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage" class="error-banner">
+    <span>⚠️ {{ errorMessage }}</span>
+    <button class="btn-retry" (click)="loadPayroll()">Try Again</button>
   </div>
 
-  <!-- Detailed Payslip Modal -->
-  <div *ngIf="selectedPayslip" class="modal-overlay">
-    <div class="payslip-modal">
-      <div class="payslip-header">
-        <div>
-          <h3>PAYSLIP</h3>
-          <p class="company-name">HRMS Corporation</p>
-        </div>
-        <button class="close-btn" (click)="closePayslip()">✕</button>
+  <!-- Metric Summary Cards -->
+  <div class="metrics-grid" *ngIf="latestPayroll">
+    <div class="metric-card card-primary">
+      <div class="metric-header">
+        <span class="metric-label">Latest Net Pay</span>
+        <span class="badge-status">Disbursed</span>
       </div>
-
-      <div class="employee-meta">
-        <div>
-          <span class="meta-label">Employee:</span>
-          <span class="meta-val">{{ selectedPayslip.employeeName || username }}</span>
-        </div>
-        <div>
-          <span class="meta-label">Pay Period:</span>
-          <span class="meta-val">{{ getMonthName(selectedPayslip.month) }} {{ selectedPayslip.year }}</span>
-        </div>
-        <div>
-          <span class="meta-label">Processed On:</span>
-          <span class="meta-val">{{ selectedPayslip.processedAt | date:'mediumDate' }}</span>
-        </div>
+      <div class="metric-value text-emerald">₹{{ latestPayroll.netSalary | number:'1.2-2' }}</div>
+      <div class="metric-footer">
+        <span>{{ getMonthName(latestPayroll.month) }} {{ latestPayroll.year }}</span>
+        <span class="dot-separator">•</span>
+        <span class="text-sub">Bank Transfer</span>
       </div>
+    </div>
 
-      <div class="breakdown-grid">
-        <div class="breakdown-col">
-          <h4>EARNINGS</h4>
-          <div class="line-item">
-            <span>Gross Salary</span>
-            <span class="amount">₹{{ selectedPayslip.grossSalary | number }}</span>
-          </div>
-        </div>
-
-        <div class="breakdown-col">
-          <h4>DEDUCTIONS</h4>
-          <div class="line-item">
-            <span>Provident Fund (PF)</span>
-            <span class="amount">₹{{ (selectedPayslip.pf || 0) | number }}</span>
-          </div>
-          <div class="line-item">
-            <span>Income Tax (TDS)</span>
-            <span class="amount">₹{{ (selectedPayslip.tax || 0) | number }}</span>
-          </div>
-          <div class="line-item" *ngIf="selectedPayslip.leaveDeduction">
-            <span>Leave Deduction</span>
-            <span class="amount">₹{{ selectedPayslip.leaveDeduction | number }}</span>
-          </div>
-          <div class="line-item total-line">
-            <span>Total Deductions</span>
-            <span class="amount text-red">₹{{ (selectedPayslip.totalDeduction || selectedPayslip.deductions) | number }}</span>
-          </div>
-        </div>
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Latest Gross Salary</span>
+        <span class="metric-icon">📈</span>
       </div>
-
-      <div class="netpay-card">
-        <span class="label">NET SALARY PAYABLE:</span>
-        <span class="val">₹{{ selectedPayslip.netSalary | number }}</span>
+      <div class="metric-value text-sky">₹{{ totalGrossRecent | number:'1.2-2' }}</div>
+      <div class="metric-footer">
+        <span class="text-sub">Basic + Allowances before deductions</span>
       </div>
+    </div>
 
-      <div class="modal-actions">
-        <button class="btn-print" (click)="printPayslip()">🖨️ Print / Save PDF</button>
-        <button class="btn-secondary" (click)="closePayslip()">Close</button>
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Deductions</span>
+        <span class="metric-icon">📉</span>
+      </div>
+      <div class="metric-value text-rose">₹{{ totalDeductionRecent | number:'1.2-2' }}</div>
+      <div class="metric-footer">
+        <span class="text-sub">PF: ₹{{ (latestPayroll.pf || 0) | number:'1.0-0' }} | Tax: ₹{{ (latestPayroll.tax || 0) | number:'1.0-0' }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">YTD Net Pay (Current Year)</span>
+        <span class="metric-icon">💰</span>
+      </div>
+      <div class="metric-value text-purple">₹{{ ytdNetTotal | number:'1.2-2' }}</div>
+      <div class="metric-footer">
+        <span class="text-sub">{{ payrolls.length }} total pay run(s) recorded</span>
       </div>
     </div>
   </div>
 
-  <!-- Payroll History Table -->
-  <div class="table-card">
-    <div class="table-topbar">
-      <h3>Salary Payment History</h3>
+  <!-- Main Content Card -->
+  <div class="content-card">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <h3>Salary Payment History</h3>
+        <span class="records-pill" *ngIf="!isLoading">{{ filteredPayrolls.length }} records</span>
+      </div>
+
+      <div class="toolbar-filters">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search by month, year, amount..."
+            [(ngModel)]="searchQuery"
+          />
+          <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''">✕</button>
+        </div>
+
+        <div class="filter-group" *ngIf="availableYears.length > 0">
+          <label>Year:</label>
+          <select [(ngModel)]="selectedYear">
+            <option value="ALL">All Years</option>
+            <option *ngFor="let yr of availableYears" [value]="yr.toString()">{{ yr }}</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="table-container">
-      <table *ngIf="payrolls.length > 0; else noPayrolls">
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Loading your payroll records...</p>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container" *ngIf="!isLoading">
+      <table *ngIf="filteredPayrolls.length > 0; else noPayrollsFound">
         <thead>
           <tr>
             <th>Pay Period</th>
             <th>Gross Salary</th>
-            <th>Deductions</th>
-            <th>Net Salary</th>
-            <th>Processed At</th>
-            <th>Action</th>
+            <th>PF (Provident Fund)</th>
+            <th>Tax (TDS)</th>
+            <th>Total Deductions</th>
+            <th>Net Pay</th>
+            <th>Status</th>
+            <th>Payment Date</th>
+            <th class="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of payrolls">
-            <td class="font-bold text-white">
-              {{ getMonthName(p.month) }} {{ p.year }}
+          <tr *ngFor="let p of filteredPayrolls">
+            <td class="font-semibold text-white">
+              <span class="period-pill">{{ getMonthName(p.month) }} {{ p.year }}</span>
             </td>
-            <td>₹{{ p.grossSalary | number }}</td>
-            <td class="text-red">₹{{ (p.totalDeduction || p.deductions) | number }}</td>
-            <td class="text-green font-bold">₹{{ p.netSalary | number }}</td>
-            <td>{{ p.processedAt | date:'mediumDate' }}</td>
+            <td>₹{{ p.grossSalary | number:'1.2-2' }}</td>
+            <td class="text-muted">₹{{ (p.pf || 0) | number:'1.2-2' }}</td>
+            <td class="text-muted">₹{{ (p.tax || 0) | number:'1.2-2' }}</td>
+            <td class="text-rose font-medium">₹{{ (p.totalDeduction || p.deductions) | number:'1.2-2' }}</td>
+            <td class="text-emerald font-bold text-lg">₹{{ p.netSalary | number:'1.2-2' }}</td>
             <td>
-              <button class="btn-view" (click)="openPayslip(p)">
-                📄 View Payslip
+              <span class="status-badge paid">Paid</span>
+            </td>
+            <td class="text-sub">
+              {{ p.processedAt ? (p.processedAt | date:'mediumDate') : '—' }}
+            </td>
+            <td class="text-center">
+              <button class="btn-action" (click)="openPayslip(p)">
+                <span>📄</span> View Payslip
               </button>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <ng-template #noPayrolls>
+      <!-- Empty State -->
+      <ng-template #noPayrollsFound>
         <div class="empty-state">
-          <p>No payroll history found yet.</p>
+          <div class="empty-icon">🧾</div>
+          <h4>No Payroll Records Found</h4>
+          <p *ngIf="payrolls.length === 0">
+            No payroll runs have been generated for your employee profile yet.
+            Your HR administrator or manager will process payroll at the end of each billing cycle.
+          </p>
+          <p *ngIf="payrolls.length > 0">
+            No records matched your search or year filter. Try resetting filters.
+          </p>
+          <button *ngIf="searchQuery || selectedYear !== 'ALL'" class="btn-reset" (click)="searchQuery = ''; selectedYear = 'ALL'">
+            Reset Filters
+          </button>
         </div>
       </ng-template>
+    </div>
+  </div>
+
+  <!-- Detailed Printable Payslip Modal -->
+  <div *ngIf="selectedPayslip" class="modal-backdrop" (click)="closePayslip()">
+    <div class="payslip-dialog" (click)="$event.stopPropagation()">
+      <!-- Printable Area -->
+      <div class="printable-voucher" id="payslipVoucher">
+        <!-- Voucher Header -->
+        <div class="voucher-header">
+          <div class="company-brand">
+            <div class="company-logo-badge">HRMS</div>
+            <div>
+              <h3>HRMS CORPORATION</h3>
+              <p class="company-sub">Global Workforce & Payroll Solutions</p>
+            </div>
+          </div>
+          <div class="voucher-title-box">
+            <span class="voucher-tag">OFFICIAL SALARY SLIP</span>
+            <span class="voucher-period">{{ getMonthName(selectedPayslip.month) | uppercase }} {{ selectedPayslip.year }}</span>
+          </div>
+        </div>
+
+        <div class="voucher-divider"></div>
+
+        <!-- Employee Info Grid -->
+        <div class="emp-info-grid">
+          <div class="info-cell">
+            <span class="info-label">Employee Name</span>
+            <span class="info-value font-bold">{{ selectedPayslip.employeeName || username }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Employee Code</span>
+            <span class="info-value">{{ selectedPayslip.employeeCode || ('EMP-' + selectedPayslip.id) }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Department</span>
+            <span class="info-value">{{ selectedPayslip.departmentName || 'General' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Designation</span>
+            <span class="info-value">{{ selectedPayslip.designationTitle || 'Staff Member' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Payment Method</span>
+            <span class="info-value">Direct Bank Deposit</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Disbursement Date</span>
+            <span class="info-value">{{ selectedPayslip.processedAt ? (selectedPayslip.processedAt | date:'mediumDate') : '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Breakdown Columns -->
+        <div class="salary-breakdown">
+          <!-- Earnings Column -->
+          <div class="breakdown-card">
+            <div class="breakdown-head earnings-head">
+              <span>EARNINGS</span>
+              <span>AMOUNT</span>
+            </div>
+            <div class="breakdown-body">
+              <div class="item-row">
+                <span>Gross Compensation</span>
+                <span class="item-val">₹{{ selectedPayslip.grossSalary | number:'1.2-2' }}</span>
+              </div>
+              <div class="item-row spacer-row">
+                <span class="text-sub">Includes basic, HRA & allowances</span>
+                <span></span>
+              </div>
+            </div>
+            <div class="breakdown-total">
+              <span>Total Gross Earnings</span>
+              <span class="text-sky font-bold">₹{{ selectedPayslip.grossSalary | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- Deductions Column -->
+          <div class="breakdown-card">
+            <div class="breakdown-head deductions-head">
+              <span>DEDUCTIONS</span>
+              <span>AMOUNT</span>
+            </div>
+            <div class="breakdown-body">
+              <div class="item-row">
+                <span>Provident Fund (PF)</span>
+                <span class="item-val">₹{{ (selectedPayslip.pf || 0) | number:'1.2-2' }}</span>
+              </div>
+              <div class="item-row">
+                <span>Income Tax (TDS)</span>
+                <span class="item-val">₹{{ (selectedPayslip.tax || 0) | number:'1.2-2' }}</span>
+              </div>
+              <div class="item-row" *ngIf="selectedPayslip.leaveDeduction && selectedPayslip.leaveDeduction > 0">
+                <span>Unpaid Leave / Absent</span>
+                <span class="item-val text-rose">₹{{ selectedPayslip.leaveDeduction | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="breakdown-total">
+              <span>Total Deductions</span>
+              <span class="text-rose font-bold">₹{{ (selectedPayslip.totalDeduction || selectedPayslip.deductions) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Net Salary Box -->
+        <div class="net-pay-banner">
+          <div>
+            <span class="net-label">NET TAKE-HOME SALARY</span>
+            <span class="net-sub">Directly transferred to registered bank account</span>
+          </div>
+          <div class="net-amount">
+            ₹{{ selectedPayslip.netSalary | number:'1.2-2' }}
+          </div>
+        </div>
+
+        <!-- Voucher Signatures & Disclaimer -->
+        <div class="voucher-footer">
+          <div class="footer-note">
+            <p>This is a computer-generated salary slip and does not require a physical signature.</p>
+            <p class="confidential">CONFIDENTIAL • Intended solely for the designated recipient</p>
+          </div>
+          <div class="signature-box">
+            <div class="sign-line"></div>
+            <span class="sign-label">Authorized Signatory</span>
+            <span class="sign-org">HRMS Corporation Payroll Division</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialog Action Buttons (Hidden when printed) -->
+      <div class="dialog-actions no-print">
+        <button class="btn-print" (click)="printPayslip()">
+          <span>🖨️</span> Print / Save PDF
+        </button>
+        <button class="btn-close" (click)="closePayslip()">
+          Close
+        </button>
+      </div>
     </div>
   </div>
 </div>

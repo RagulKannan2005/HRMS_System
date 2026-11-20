@@ -49,11 +49,12 @@ export class ManagerLeaveApprovals implements OnInit {
         } else {
           this.selectedLeave = null;
         }
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
         console.error('Error fetching leaves:', err);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -75,22 +76,26 @@ export class ManagerLeaveApprovals implements OnInit {
           (l.reason || '').toLowerCase().includes(q),
       );
     }
+    this.cdr.markForCheck();
   }
 
   selectLeave(leave: any): void {
     this.selectedLeave = leave;
     this.selectedMemberBalances = [];
+    this.cdr.markForCheck();
 
     if (leave?.employeeId) {
       this.isLoadingBalances = true;
+      this.cdr.markForCheck();
       this.managerService.getEmployeeLeaveBalance(leave.employeeId).subscribe({
         next: (balances) => {
           this.isLoadingBalances = false;
           this.selectedMemberBalances = balances || [];
-          this.cdr.detectChanges();
+          this.cdr.markForCheck();
         },
         error: () => {
           this.isLoadingBalances = false;
+          this.cdr.markForCheck();
         },
       });
     }
@@ -104,17 +109,20 @@ export class ManagerLeaveApprovals implements OnInit {
     if (!leave) return;
     this.isProcessing = true;
     this.feedbackMessage = null;
+    this.cdr.markForCheck();
 
     this.managerService.approveLeave(leave.id).subscribe({
       next: () => {
         this.isProcessing = false;
         this.showToast(`Leave request #${leave.id} approved successfully!`, false);
         this.loadLeaves();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isProcessing = false;
         const msg = err?.error?.message || err?.error?.error || 'Approval failed';
         this.showToast(typeof msg === 'string' ? msg : 'Approval failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -123,17 +131,20 @@ export class ManagerLeaveApprovals implements OnInit {
     if (!leave) return;
     this.isProcessing = true;
     this.feedbackMessage = null;
+    this.cdr.markForCheck();
 
     this.managerService.rejectLeave(leave.id).subscribe({
       next: () => {
         this.isProcessing = false;
         this.showToast(`Leave request #${leave.id} rejected.`, false);
         this.loadLeaves();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isProcessing = false;
         const msg = err?.error?.message || err?.error?.error || 'Rejection failed';
         this.showToast(typeof msg === 'string' ? msg : 'Rejection failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -141,10 +152,10 @@ export class ManagerLeaveApprovals implements OnInit {
   private showToast(msg: string, isError: boolean): void {
     this.feedbackMessage = msg;
     this.feedbackError = isError;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.feedbackMessage = null;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }, 4500);
   }
 }

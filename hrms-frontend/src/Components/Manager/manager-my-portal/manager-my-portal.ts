@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ManagerService } from '../../../service/manager.service';
 
 @Component({
@@ -40,6 +42,7 @@ export class ManagerMyPortal implements OnInit {
   myPayrolls: any[] = [];
   selectedPayslip: any = null;
   showPayslipModal: boolean = false;
+  isLoading: boolean = false;
 
   ngOnInit(): void {
     const today = new Date();
@@ -50,27 +53,49 @@ export class ManagerMyPortal implements OnInit {
     this.leaveForm.fromDate = todayStr;
     this.leaveForm.toDate = todayStr;
 
-    this.loadTodayAttendance();
-    this.loadMyLeaves();
-    this.loadMyPayroll();
+    this.loadInitialData();
   }
 
-  loadTodayAttendance(): void {
-    const today = new Date();
-    const todayStr = today.toISOString().substring(0, 10);
-    this.managerService.getTodayAttendance(todayStr).subscribe({
-      next: (res: any) => {
-        if (Array.isArray(res) && res.length > 0) {
-          this.todayAttendance = res[0];
-        } else if (res && !Array.isArray(res)) {
-          this.todayAttendance = res;
+  loadInitialData(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
+    const todayStr = new Date().toISOString().substring(0, 10);
+
+    forkJoin({
+      attendance: this.managerService
+        .getTodayAttendance(todayStr)
+        .pipe(catchError(() => of(null))),
+      leaves: this.managerService
+        .getMyLeaves()
+        .pipe(catchError(() => of([]))),
+      payroll: this.managerService
+        .getMyPayroll()
+        .pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: (res) => {
+        // Attendance
+        const att = res.attendance;
+        if (Array.isArray(att) && att.length > 0) {
+          this.todayAttendance = att[0];
+        } else if (att && !Array.isArray(att)) {
+          this.todayAttendance = att;
         } else {
           this.todayAttendance = null;
         }
-        this.cdr.detectChanges();
+
+        // Leaves
+        this.myLeaves = res.leaves || [];
+
+        // Payroll
+        this.myPayrolls = res.payroll || [];
+
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
-      error: () => {
-        this.todayAttendance = null;
+      error: (err) => {
+        console.error('Error loading my portal data:', err);
+        this.isLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -78,16 +103,20 @@ export class ManagerMyPortal implements OnInit {
   onCheckIn(): void {
     this.isClocking = true;
     this.shiftMessage = null;
+    this.cdr.markForCheck();
+
     this.managerService.checkIn().subscribe({
       next: (res) => {
         this.isClocking = false;
         this.todayAttendance = res;
         this.showShiftToast('Shift clocked in successfully!', false);
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isClocking = false;
         const msg = err?.error?.message || err?.error?.error || 'Check-in failed';
         this.showShiftToast(typeof msg === 'string' ? msg : 'Check-in failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -95,16 +124,20 @@ export class ManagerMyPortal implements OnInit {
   onCheckOut(): void {
     this.isClocking = true;
     this.shiftMessage = null;
+    this.cdr.markForCheck();
+
     this.managerService.checkOut().subscribe({
       next: (res) => {
         this.isClocking = false;
         this.todayAttendance = res;
         this.showShiftToast('Shift clocked out successfully!', false);
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isClocking = false;
         const msg = err?.error?.message || err?.error?.error || 'Check-out failed';
         this.showShiftToast(typeof msg === 'string' ? msg : 'Check-out failed', true);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -113,7 +146,7 @@ export class ManagerMyPortal implements OnInit {
     this.managerService.getMyLeaves().subscribe({
       next: (data) => {
         this.myLeaves = data || [];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Error fetching personal leaves:', err),
     });
@@ -123,27 +156,32 @@ export class ManagerMyPortal implements OnInit {
     this.leaveError = null;
     this.leaveSuccess = null;
     this.showApplyModal = true;
+    this.cdr.markForCheck();
   }
 
   closeApplyModal(): void {
     this.showApplyModal = false;
+    this.cdr.markForCheck();
   }
 
   onSubmitLeave(): void {
     if (!this.leaveForm.fromDate || !this.leaveForm.toDate || !this.leaveForm.reason.trim()) {
       this.leaveError = 'Please fill out all fields.';
+      this.cdr.markForCheck();
       return;
     }
 
     this.isApplying = true;
     this.leaveError = null;
     this.leaveSuccess = null;
+    this.cdr.markForCheck();
 
     this.managerService.applyLeave(this.leaveForm).subscribe({
       next: () => {
         this.isApplying = false;
         this.leaveSuccess = 'Leave request submitted successfully for Admin review!';
         this.loadMyLeaves();
+        this.cdr.markForCheck();
         setTimeout(() => {
           this.closeApplyModal();
         }, 1200);
@@ -151,28 +189,21 @@ export class ManagerMyPortal implements OnInit {
       error: (err) => {
         this.isApplying = false;
         this.leaveError = err?.error?.message || err?.error?.error || 'Failed to submit leave';
+        this.cdr.markForCheck();
       },
-    });
-  }
-
-  loadMyPayroll(): void {
-    this.managerService.getMyPayroll().subscribe({
-      next: (data) => {
-        this.myPayrolls = data || [];
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Error fetching personal payroll:', err),
     });
   }
 
   openPayslip(p: any): void {
     this.selectedPayslip = p;
     this.showPayslipModal = true;
+    this.cdr.markForCheck();
   }
 
   closePayslip(): void {
     this.showPayslipModal = false;
     this.selectedPayslip = null;
+    this.cdr.markForCheck();
   }
 
   printPayslip(): void {
@@ -182,10 +213,10 @@ export class ManagerMyPortal implements OnInit {
   private showShiftToast(msg: string, isError: boolean): void {
     this.shiftMessage = msg;
     this.shiftError = isError;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.shiftMessage = null;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }, 4500);
   }
 }
