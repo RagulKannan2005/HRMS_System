@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,7 +40,6 @@ import com.example.hrms.Repository.LeaveRequestRepository;
 import com.example.hrms.Repository.SalaryRepository;
 import com.example.hrms.Repository.UserRepository;
 
-import jakarta.el.ELManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -216,7 +215,37 @@ public class ManagerService {
         }
 
         public List<EmployeeResponseDto> getmanagerTeam(String managername) {
-                List<Employee> employees = employeerepo.findByManager_EmployeeName(managername);
+                List<Employee> employees = List.of();
+
+                if (managername != null && !managername.isBlank() && !"undefined".equalsIgnoreCase(managername) && !"null".equalsIgnoreCase(managername)) {
+                        Optional<Employee> mgrByEmail = employeerepo.findByEmail(managername);
+                        if (mgrByEmail.isPresent()) {
+                                employees = employeerepo.findByManager_Id(mgrByEmail.get().getId());
+                        }
+                        if (employees.isEmpty()) {
+                                employees = employeerepo.findByManager_EmployeeName(managername);
+                        }
+                        if (employees.isEmpty()) {
+                                employees = employeerepo.findByManager_Email(managername);
+                        }
+                }
+
+                if (employees.isEmpty()) {
+                        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                        if (authentication != null && authentication.getPrincipal() instanceof User user) {
+                                Long empId = user.getEmployeeId();
+                                if (empId != null) {
+                                        employees = employeerepo.findByManager_Id(empId);
+                                }
+                                if (employees.isEmpty()) {
+                                        Optional<Employee> mgr = employeerepo.findByEmail(user.getEmail());
+                                        if (mgr.isPresent()) {
+                                                employees = employeerepo.findByManager_Id(mgr.get().getId());
+                                        }
+                                }
+                        }
+                }
+
                 return employees.stream().map(this::toEmployeeResponseDto).collect(Collectors.toList());
         }
 

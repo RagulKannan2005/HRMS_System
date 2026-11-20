@@ -1,0 +1,130 @@
+<div class="attendance-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h2>Team Attendance Tracking</h2>
+      <p class="subtitle">Monitor shift status, check-ins, work duration, and tardiness</p>
+    </div>
+    <button class="btn-refresh" (click)="loadAttendance()">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <!-- Metric Badges -->
+  <div class="metrics-row">
+    <div class="stat-card green">
+      <span class="stat-label">Present</span>
+      <span class="stat-val">{{ totalPresent }}</span>
+    </div>
+    <div class="stat-card amber">
+      <span class="stat-label">On Leave</span>
+      <span class="stat-val">{{ totalOnLeave }}</span>
+    </div>
+    <div class="stat-card red">
+      <span class="stat-label">Late Arrivals</span>
+      <span class="stat-val">{{ totalLate }}</span>
+    </div>
+    <div class="stat-card blue">
+      <span class="stat-label">Filtered Total</span>
+      <span class="stat-val">{{ filteredRecords.length }}</span>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-card">
+    <div class="filter-item">
+      <label>Date</label>
+      <input
+        type="date"
+        [(ngModel)]="selectedDate"
+        (change)="onDateChange()"
+      />
+    </div>
+
+    <div class="filter-item">
+      <label>Status</label>
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+        <option value="ALL">All Statuses</option>
+        <option value="PRESENT">Present</option>
+        <option value="ON_LEAVE">On Leave</option>
+        <option value="ABSENT">Absent</option>
+        <option value="HOLIDAY">Holiday</option>
+      </select>
+    </div>
+
+    <div class="filter-item flex-grow">
+      <label>Search</label>
+      <input
+        type="text"
+        placeholder="Filter by employee name, code, department..."
+        [(ngModel)]="searchQuery"
+        (input)="applyFilter()"
+      />
+    </div>
+
+    <button
+      class="btn-reset"
+      (click)="selectedDate = ''; selectedStatus = 'ALL'; searchQuery = ''; applyFilter(); calculateMetrics()"
+    >
+      Reset Filters
+    </button>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">
+      <p>Loading attendance records...</p>
+    </div>
+
+    <div *ngIf="!isLoading && filteredRecords.length === 0" class="empty-state">
+      <p>No attendance records found matching the current criteria.</p>
+    </div>
+
+    <table class="data-table" *ngIf="!isLoading && filteredRecords.length > 0">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Date</th>
+          <th>Check-in</th>
+          <th>Check-out</th>
+          <th>Work Duration</th>
+          <th>Break</th>
+          <th>Late</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filteredRecords">
+          <td>
+            <div class="emp-profile">
+              <span class="name">{{ row.employeeName || 'ID: ' + row.employeeId }}</span>
+              <span class="sub" *ngIf="row.employeeCode">{{ row.employeeCode }} &bull; {{ row.departmentName || 'General' }}</span>
+            </div>
+          </td>
+          <td>{{ row.date }}</td>
+          <td>
+            <span class="time-pill checkin" *ngIf="row.checkin">{{ row.checkin }}</span>
+            <span class="empty-dash" *ngIf="!row.checkin">—</span>
+          </td>
+          <td>
+            <span class="time-pill checkout" *ngIf="row.checkout">{{ row.checkout }}</span>
+            <span class="empty-dash" *ngIf="!row.checkout">—</span>
+          </td>
+          <td>{{ formatMinutes(row.workMinutes) }}</td>
+          <td>{{ row.breakMinutes ? row.breakMinutes + 'm' : '0m' }}</td>
+          <td>
+            <span class="late-pill" *ngIf="row.lateMinutes && row.lateMinutes > 0">
+              +{{ row.lateMinutes }}m
+            </span>
+            <span class="on-time" *ngIf="!row.lateMinutes || row.lateMinutes === 0">On time</span>
+          </td>
+          <td>
+            <span class="status-pill" [ngClass]="row.status?.toLowerCase()">
+              {{ row.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,201 @@
+<div class="manager-home-container">
+  <!-- Top Welcome Banner -->
+  <header class="welcome-banner">
+    <div class="welcome-text">
+      <h2>Manager Overview</h2>
+      <p>Welcome back, <span class="highlight">{{ managerName }}</span> &bull; {{ todayFormatted }}</p>
+    </div>
+
+    <!-- Personal Shift Clock Card -->
+    <div class="shift-card">
+      <div class="shift-info">
+        <span class="shift-label">My Shift Today</span>
+        <span class="shift-status" [ngClass]="{
+          'status-present': todayAttendance?.status === 'PRESENT',
+          'status-checked-out': todayAttendance?.checkout,
+          'status-empty': !todayAttendance
+        }">
+          {{ todayAttendance?.checkout ? 'Checked Out' : (todayAttendance?.checkin ? 'Active Shift' : 'Not Checked In') }}
+        </span>
+      </div>
+
+      <div class="shift-times" *ngIf="todayAttendance?.checkin">
+        <span>In: {{ todayAttendance.checkin }}</span>
+        <span *ngIf="todayAttendance.checkout">&bull; Out: {{ todayAttendance.checkout }}</span>
+      </div>
+
+      <div class="shift-actions">
+        <button
+          *ngIf="!todayAttendance?.checkin"
+          class="btn-clock in"
+          (click)="onCheckIn()"
+          [disabled]="isClocking"
+        >
+          {{ isClocking ? 'Processing...' : 'Clock In' }}
+        </button>
+        <button
+          *ngIf="todayAttendance?.checkin && !todayAttendance?.checkout"
+          class="btn-clock out"
+          (click)="onCheckOut()"
+          [disabled]="isClocking"
+        >
+          {{ isClocking ? 'Processing...' : 'Clock Out' }}
+        </button>
+      </div>
+
+      <div *ngIf="clockMessage" class="clock-toast" [class.error]="clockError">
+        {{ clockMessage }}
+      </div>
+    </div>
+  </header>
+
+  <!-- Metric Summary Cards -->
+  <section class="metrics-grid">
+    <div class="metric-card emerald">
+      <div class="metric-icon">👥</div>
+      <div class="metric-details">
+        <span class="metric-label">Team Members</span>
+        <span class="metric-value">{{ teamCount }}</span>
+      </div>
+      <a routerLink="/manager/team" class="metric-link">View Roster &rarr;</a>
+    </div>
+
+    <div class="metric-card amber">
+      <div class="metric-icon">⏳</div>
+      <div class="metric-details">
+        <span class="metric-label">Pending Leaves</span>
+        <span class="metric-value">{{ pendingLeavesCount }}</span>
+      </div>
+      <a routerLink="/manager/leave-approvals" class="metric-link">Review Requests &rarr;</a>
+    </div>
+
+    <div class="metric-card cyan">
+      <div class="metric-icon">⏱️</div>
+      <div class="metric-details">
+        <span class="metric-label">Present Today</span>
+        <span class="metric-value">{{ presentTodayCount }}</span>
+      </div>
+      <a routerLink="/manager/attendance" class="metric-link">Attendance Logs &rarr;</a>
+    </div>
+
+    <div class="metric-card purple">
+      <div class="metric-icon">💰</div>
+      <div class="metric-details">
+        <span class="metric-label">Payroll Control</span>
+        <span class="metric-value">Active</span>
+      </div>
+      <a routerLink="/manager/payroll" class="metric-link">Run Payroll &rarr;</a>
+    </div>
+  </section>
+
+  <!-- Split Dashboard Sections -->
+  <div class="dashboard-split">
+    <!-- Left Column: Pending Leave Requests with Direct Actions -->
+    <section class="card-panel flex-2">
+      <div class="panel-header">
+        <div class="header-title">
+          <h3>Pending Team Leave Requests</h3>
+          <span class="badge-count" *ngIf="pendingLeavesCount > 0">{{ pendingLeavesCount }} pending</span>
+        </div>
+        <a routerLink="/manager/leave-approvals" class="btn-subtle">View All Approvals</a>
+      </div>
+
+      <div class="panel-body">
+        <div *ngIf="pendingLeaves.length === 0" class="empty-state">
+          <p>No leave requests pending your review. All caught up!</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="pendingLeaves.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Leave Type</th>
+                <th>Duration</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let leave of pendingLeaves.slice(0, 5)">
+                <td>
+                  <div class="emp-cell">
+                    <span class="emp-name">{{ leave.employeeName || 'ID: ' + leave.employeeId }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-type">{{ leave.leaveType }}</span>
+                </td>
+                <td>{{ leave.fromDate }} to {{ leave.toDate }}</td>
+                <td><span class="days-pill">{{ leave.numberOfDays }}d</span></td>
+                <td class="reason-cell" [title]="leave.reason">{{ leave.reason || '—' }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button
+                      class="btn-action approve"
+                      (click)="onApproveLeave(leave.id)"
+                      [disabled]="actionLoading"
+                      title="Approve Leave"
+                    >
+                      ✓ Approve
+                    </button>
+                    <button
+                      class="btn-action reject"
+                      (click)="onRejectLeave(leave.id)"
+                      [disabled]="actionLoading"
+                      title="Reject Leave"
+                    >
+                      ✕ Reject
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Quick Team Preview & Actions -->
+    <section class="card-panel flex-1">
+      <div class="panel-header">
+        <h3>My Team Preview</h3>
+        <a routerLink="/manager/team" class="btn-subtle">Manage Team</a>
+      </div>
+
+      <div class="panel-body">
+        <div *ngIf="teamMembers.length === 0" class="empty-state">
+          <p>No team members assigned yet.</p>
+          <a routerLink="/manager/team" class="btn-primary-sm">+ Onboard Employee</a>
+        </div>
+
+        <div class="team-list" *ngIf="teamMembers.length > 0">
+          <div class="team-item" *ngFor="let emp of teamMembers.slice(0, 5)">
+            <div class="team-avatar">{{ (emp.employeeName || 'E').charAt(0).toUpperCase() }}</div>
+            <div class="team-info">
+              <span class="emp-title">{{ emp.employeeName }}</span>
+              <span class="emp-sub">{{ emp.designationName || emp.employeeCode }} &bull; {{ emp.departmentName || 'General' }}</span>
+            </div>
+            <span class="status-dot active"></span>
+          </div>
+        </div>
+
+        <div class="quick-links-box">
+          <span class="quick-links-title">Quick Actions</span>
+          <div class="quick-btns">
+            <a routerLink="/manager/team" class="quick-btn">
+              <span>+ Add Employee</span>
+            </a>
+            <a routerLink="/manager/payroll" class="quick-btn">
+              <span>Run Payroll</span>
+            </a>
+            <a routerLink="/manager/my-portal" class="quick-btn">
+              <span>My Personal Portal</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

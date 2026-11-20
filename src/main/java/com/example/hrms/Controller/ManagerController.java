@@ -45,8 +45,9 @@ public class ManagerController {
     }
 
     @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/my-team/{managername}")
-    public ResponseEntity<List<EmployeeResponseDto>> getmanagerTeam(@PathVariable String managername){
+    @GetMapping({"/my-team", "/my-team/{managername}"})
+    public ResponseEntity<List<EmployeeResponseDto>> getmanagerTeam(
+            @PathVariable(required = false) String managername){
         return ResponseEntity.ok(managerservice.getmanagerTeam(managername));
     }
 

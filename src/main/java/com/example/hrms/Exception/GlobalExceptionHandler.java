@@ -46,6 +46,14 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "Database constraint violation: " + ex.getMostSpecificCause().getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex) {
+        System.err.println("=== 403 ACCESS DENIED: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", "Access denied: " + ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
         System.err.println("=== RUNTIME EXCEPTION 400: " + ex.getMessage());

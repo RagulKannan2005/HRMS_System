@@ -91,13 +91,13 @@ public class AdminContoller {
         return ResponseEntity.ok(managerService.getAllEmployee());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/designations")
     public ResponseEntity<List<DesignationResponseDto>> getDesignations() {
         return ResponseEntity.ok(adminService.getAllDesignations());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @GetMapping("/departments")
     public ResponseEntity<List<DepartmentResponseDto>> getDepartments() {
         return ResponseEntity.ok(adminService.getAllDepartments());

@@ -1,0 +1,281 @@
+<div class="team-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>My Direct Reports</h2>
+      <p class="subtitle">Manage, review, and onboard employees reporting to your unit</p>
+    </div>
+    <button class="btn-primary" (click)="openOnboardModal()">
+      + Onboard Employee
+    </button>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search team by name, code, designation, department..."
+        [(ngModel)]="searchQuery"
+        (input)="applyFilter()"
+      />
+    </div>
+    <span class="count-badge">{{ filteredMembers.length }} team members</span>
+  </div>
+
+  <!-- Main Grid: Team Members List + Detailed Inspector -->
+  <div class="team-layout">
+    <!-- Members Grid -->
+    <div class="members-column">
+      <div *ngIf="isLoading" class="loading-state">
+        <p>Loading team members...</p>
+      </div>
+
+      <div *ngIf="!isLoading && filteredMembers.length === 0" class="empty-state">
+        <p>No team members found matching your search.</p>
+      </div>
+
+      <div class="cards-grid" *ngIf="!isLoading && filteredMembers.length > 0">
+        <div
+          class="member-card"
+          *ngFor="let member of filteredMembers"
+          [class.selected]="selectedMember?.id === member.id"
+          (click)="onSelectMember(member)"
+        >
+          <div class="card-top">
+            <div class="avatar-circle">
+              {{ (member.employeeName || 'E').charAt(0).toUpperCase() }}
+            </div>
+            <div class="member-meta">
+              <h4>{{ member.employeeName }}</h4>
+              <span class="code-pill">{{ member.employeeCode }}</span>
+            </div>
+          </div>
+
+          <div class="card-details">
+            <div class="detail-row">
+              <span class="label">Designation:</span>
+              <span class="val">{{ member.designationName || '—' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Department:</span>
+              <span class="val">{{ member.departmentName || '—' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Email:</span>
+              <span class="val text-truncate">{{ member.email }}</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="view-btn">Inspect Profile &rarr;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Member Details Inspector -->
+    <div class="inspector-column" *ngIf="selectedMember">
+      <div class="inspector-card">
+        <div class="inspector-header">
+          <div class="inspector-avatar">
+            {{ (selectedMember.employeeName || 'E').charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <h3>{{ selectedMember.employeeName }}</h3>
+            <span class="inspector-role">{{ selectedMember.designationName }} &bull; {{ selectedMember.departmentName }}</span>
+          </div>
+        </div>
+
+        <div class="inspector-section">
+          <h4>Employee Information</h4>
+          <div class="info-grid">
+            <div>
+              <span class="info-k">Employee Code</span>
+              <span class="info-v">{{ selectedMember.employeeCode }}</span>
+            </div>
+            <div>
+              <span class="info-k">Email</span>
+              <span class="info-v">{{ selectedMember.email }}</span>
+            </div>
+            <div>
+              <span class="info-k">Phone</span>
+              <span class="info-v">{{ selectedMember.phone || '—' }}</span>
+            </div>
+            <div>
+              <span class="info-k">Gender</span>
+              <span class="info-v">{{ selectedMember.gender || '—' }}</span>
+            </div>
+            <div>
+              <span class="info-k">Joining Date</span>
+              <span class="info-v">{{ selectedMember.joiningDate || '—' }}</span>
+            </div>
+            <div>
+              <span class="info-k">Date of Birth</span>
+              <span class="info-v">{{ selectedMember.dateOfBirth || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-section">
+          <h4>Annual Leave Balances</h4>
+          <div class="balance-chips" *ngIf="memberBalances.length > 0">
+            <div class="balance-chip" *ngFor="let b of memberBalances">
+              <span class="chip-type">{{ b.leaveType }}</span>
+              <span class="chip-nums">{{ b.totalDays - b.usedDays }} left / {{ b.totalDays }} total</span>
+            </div>
+          </div>
+          <p *ngIf="memberBalances.length === 0" class="muted-text">No balance records available.</p>
+        </div>
+
+        <div class="inspector-section" *ngIf="memberSalary">
+          <h4>Salary Structure</h4>
+          <div class="salary-box">
+            <div class="salary-item">
+              <span>Basic Salary:</span>
+              <strong>₹{{ memberSalary.basicSalary | number }}</strong>
+            </div>
+            <div class="salary-item">
+              <span>HRA:</span>
+              <strong>₹{{ memberSalary.hra | number }}</strong>
+            </div>
+            <div class="salary-item">
+              <span>Other Allowance:</span>
+              <strong>₹{{ memberSalary.otherAllowance | number }}</strong>
+            </div>
+            <div class="salary-item total">
+              <span>Gross Total:</span>
+              <strong>₹{{ (memberSalary.basicSalary + memberSalary.hra + memberSalary.otherAllowance) | number }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboard Employee Modal -->
+  <div class="modal-backdrop" *ngIf="showOnboardModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Onboard New Employee</h3>
+        <button class="btn-close" (click)="closeOnboardModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="formError" class="alert-box error">{{ formError }}</div>
+        <div *ngIf="formSuccess" class="alert-box success">{{ formSuccess }}</div>
+
+        <form (ngSubmit)="onSubmitOnboard()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Employee Code *</label>
+              <input type="text" [(ngModel)]="newEmployee.employeeCode" name="employeeCode" required />
+            </div>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" [(ngModel)]="newEmployee.employeeName" name="employeeName" placeholder="e.g. Rahul Sharma" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Work Email *</label>
+              <input type="email" [(ngModel)]="newEmployee.email" name="email" placeholder="rahul@company.com" required />
+            </div>
+            <div class="form-group">
+              <label>Password *</label>
+              <input type="password" [(ngModel)]="newEmployee.password" name="password" placeholder="Temporary login password" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="text" [(ngModel)]="newEmployee.phone" name="phone" placeholder="9876543210" required />
+            </div>
+            <div class="form-group">
+              <label>Gender *</label>
+              <select [(ngModel)]="newEmployee.gender" name="gender">
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Department *</label>
+              <select [(ngModel)]="newEmployee.departmentId" name="departmentId" required>
+                <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Designation *</label>
+              <select [(ngModel)]="newEmployee.designationId" name="designationId" required>
+                <option *ngFor="let des of designations" [value]="des.id">{{ des.title }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Joining Date</label>
+              <input type="date" [(ngModel)]="newEmployee.joiningDate" name="joiningDate" />
+            </div>
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <input type="date" [(ngModel)]="newEmployee.dateOfBirth" name="dateOfBirth" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Bank Account Number</label>
+              <input type="text" [(ngModel)]="newEmployee.bankAccountNumber" name="bankAccountNumber" placeholder="Account Number" />
+            </div>
+            <div class="form-group">
+              <label>IFSC Code</label>
+              <input type="text" [(ngModel)]="newEmployee.ifsc" name="ifsc" placeholder="SBIN0001234" />
+            </div>
+          </div>
+
+          <div class="form-section-title">Salary Configuration</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Basic Salary (₹)</label>
+              <input type="number" [(ngModel)]="newEmployee.basicSalary" name="basicSalary" />
+            </div>
+            <div class="form-group">
+              <label>HRA (₹)</label>
+              <input type="number" [(ngModel)]="newEmployee.hra" name="hra" />
+            </div>
+            <div class="form-group">
+              <label>Other Allowance (₹)</label>
+              <input type="number" [(ngModel)]="newEmployee.otherAllowance" name="otherAllowance" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>PF Deduction (%)</label>
+              <input type="number" [(ngModel)]="newEmployee.pfPercent" name="pfPercent" />
+            </div>
+            <div class="form-group">
+              <label>Tax Deduction (%)</label>
+              <input type="number" [(ngModel)]="newEmployee.taxPercent" name="taxPercent" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeOnboardModal()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Onboarding...' : 'Complete Onboarding' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.example.hrms.Entity.Employee;
 import com.example.hrms.Entity.User;
+import com.example.hrms.Repository.EmployeeRepository;
+import com.example.hrms.Repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,25 @@ public class PayrollService {
     private final PayrollRepository payrollrepo;
     private final SalaryRepository salaryrepo;
     private final AttendanceRepository attendancerepo;
+    private final EmployeeRepository employeerepo;
+    private final UserRepository userrepo;
+
+    private Employee getAuthenticatedEmployee(User user) {
+        if (user.getEmployeeId() != null) {
+            Optional<Employee> emp = employeerepo.findById(user.getEmployeeId());
+            if (emp.isPresent()) {
+                return emp.get();
+            }
+        }
+        Employee emp = employeerepo.findByEmail(user.getEmail())
+                .orElseThrow(() -> new RuntimeException("No employee profile found for account: " + user.getEmail()
+                        + ". Please log in with a registered employee account."));
+        try {
+            user.setEmployeeId(emp.getId());
+            userrepo.save(user);
+        } catch (Exception ignored) {}
+        return emp;
+    }
 
     public PayrollResponseDto generatePayroll(Long employeeId, Integer year, Integer month) {
         payrollrepo.findByEmployeeIdAndMonthAndYear(employeeId, month, year).ifPresent(payroll -> {
@@ -152,11 +174,9 @@ public class PayrollService {
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         User user=(User)authentication.getPrincipal();
 
-        Long employeeId=user.getEmployeeId();
-        if (employeeId==null) {
-            throw new RuntimeException("Employee profile not found");
-            
-        }
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
+
         List<Payroll> payrolls =
             payrollrepo.findByEmployee_IdOrderByYearDescMonthDesc(employeeId);
 

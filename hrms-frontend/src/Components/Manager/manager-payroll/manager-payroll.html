@@ -1,0 +1,214 @@
+<div class="payroll-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>Team Payroll & Compensation</h2>
+      <p class="subtitle">Calculate monthly wages, apply attendance-based deductions, and view payslips</p>
+    </div>
+
+    <div *ngIf="toastMessage" class="toast-box" [class.error]="toastError">
+      {{ toastMessage }}
+    </div>
+  </div>
+
+  <div class="payroll-layout">
+    <!-- Left Column: Generator Form & Team Selector -->
+    <div class="left-pane">
+      <!-- Run Payroll Card -->
+      <div class="panel-card highlight-border">
+        <div class="card-header">
+          <h3>Generate Monthly Payroll</h3>
+          <span class="pill-badge">Batch / Individual</span>
+        </div>
+
+        <div class="card-body">
+          <form (ngSubmit)="onGeneratePayroll()">
+            <div class="form-group">
+              <label>Select Team Member *</label>
+              <select [(ngModel)]="selectedMemberId" name="selectedMemberId" (change)="loadPayrollsForSelected()" required>
+                <option *ngFor="let m of teamMembers" [value]="m.id">
+                  {{ m.employeeName }} ({{ m.employeeCode }})
+                </option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Month *</label>
+                <select [(ngModel)]="selectedMonth" name="selectedMonth">
+                  <option *ngFor="let m of months" [value]="m.value">{{ m.name }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Year *</label>
+                <input type="number" [(ngModel)]="selectedYear" name="selectedYear" />
+              </div>
+            </div>
+
+            <div class="info-note">
+              <span>ℹ️ System computes attendance deductions (absent days), PF, and Tax automatically.</span>
+            </div>
+
+            <button type="submit" class="btn-generate" [disabled]="isGenerating || !selectedMemberId">
+              {{ isGenerating ? 'Processing Payroll...' : '⚡ Generate & Finalize Payroll' }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Team Members Selector List -->
+      <div class="panel-card">
+        <div class="card-header">
+          <h3>Team Members</h3>
+          <span class="count-pill">{{ teamMembers.length }}</span>
+        </div>
+
+        <div class="members-mini-list">
+          <div
+            class="mini-item"
+            *ngFor="let emp of teamMembers"
+            [class.active]="selectedMemberId === emp.id"
+            (click)="onSelectMember(emp.id)"
+          >
+            <div class="avatar-small">
+              {{ (emp.employeeName || 'E').charAt(0).toUpperCase() }}
+            </div>
+            <div class="mini-meta">
+              <span class="mini-name">{{ emp.employeeName }}</span>
+              <span class="mini-role">{{ emp.designationName || emp.employeeCode }}</span>
+            </div>
+            <span class="arrow">&rarr;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Processed Payroll History for Selected Member -->
+    <div class="right-pane">
+      <div class="panel-card">
+        <div class="card-header">
+          <h3>Processed Payroll History</h3>
+          <span class="subtitle-text" *ngIf="selectedMemberId">
+            Showing records for selected employee
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div *ngIf="selectedMemberPayrolls.length === 0" class="empty-state">
+            <p>No payroll records processed for this employee yet. Use the generator on the left to process payroll.</p>
+          </div>
+
+          <div class="table-responsive" *ngIf="selectedMemberPayrolls.length > 0">
+            <table class="payroll-table">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Gross Salary</th>
+                  <th>PF</th>
+                  <th>Tax</th>
+                  <th>Leave Deduction</th>
+                  <th>Net Salary</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of selectedMemberPayrolls">
+                  <td>
+                    <span class="period-text">{{ getMonthName(p.month) }} {{ p.year }}</span>
+                  </td>
+                  <td>₹{{ p.grossSalary | number }}</td>
+                  <td>₹{{ p.pf | number }}</td>
+                  <td>₹{{ p.tax | number }}</td>
+                  <td>₹{{ p.leaveDeduction | number }}</td>
+                  <td>
+                    <span class="net-pill">₹{{ p.netSalary | number }}</span>
+                  </td>
+                  <td>
+                    <button class="btn-view-slip" (click)="openPayslip(p)">
+                      View Payslip
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payslip Modal -->
+  <div class="modal-backdrop" *ngIf="showPayslipModal && selectedPayslip">
+    <div class="payslip-modal-card">
+      <div class="modal-top-bar">
+        <h3>Employee Payslip</h3>
+        <div class="modal-bar-actions">
+          <button class="btn-print" (click)="printPayslip()">🖨️ Print</button>
+          <button class="btn-modal-close" (click)="closePayslip()">&times;</button>
+        </div>
+      </div>
+
+      <div class="payslip-content">
+        <div class="slip-header">
+          <div class="company-brand">
+            <h2>HRMS ENTERPRISE</h2>
+            <span>Official Salary Statement</span>
+          </div>
+          <div class="slip-period">
+            <span class="month-label">{{ getMonthName(selectedPayslip.month) }} {{ selectedPayslip.year }}</span>
+            <span class="proc-date">Processed: {{ selectedPayslip.processedAt | date:'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <div class="slip-emp-info">
+          <div>
+            <span class="lbl">Employee Name:</span>
+            <strong>{{ selectedPayslip.employeeName }}</strong>
+          </div>
+          <div>
+            <span class="lbl">Payslip ID:</span>
+            <strong>#PAY-{{ selectedPayslip.id }}</strong>
+          </div>
+        </div>
+
+        <div class="breakdown-grid">
+          <!-- Earnings -->
+          <div class="breakdown-col earnings">
+            <h4>Gross Earnings</h4>
+            <div class="calc-row">
+              <span>Gross Total:</span>
+              <strong>₹{{ selectedPayslip.grossSalary | number }}</strong>
+            </div>
+          </div>
+
+          <!-- Deductions -->
+          <div class="breakdown-col deductions">
+            <h4>Deductions</h4>
+            <div class="calc-row">
+              <span>Provident Fund (PF):</span>
+              <span>₹{{ selectedPayslip.pf | number }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Income Tax:</span>
+              <span>₹{{ selectedPayslip.tax | number }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Unapproved Leave Deductions:</span>
+              <span>₹{{ selectedPayslip.leaveDeduction | number }}</span>
+            </div>
+            <div class="calc-row total-ded">
+              <span>Total Deductions:</span>
+              <strong>₹{{ selectedPayslip.totalDeduction | number }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="net-pay-banner">
+          <span>NET TAKE-HOME SALARY</span>
+          <h2>₹{{ selectedPayslip.netSalary | number }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

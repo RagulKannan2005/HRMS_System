@@ -13,6 +13,13 @@ import { EmployeeHome } from '../Components/Employee/employee-home/employee-home
 import { EmployeeAttendance } from '../Components/Employee/employee-attendance/employee-attendance';
 import { EmployeeLeaves } from '../Components/Employee/employee-leaves/employee-leaves';
 import { EmployeePayroll } from '../Components/Employee/employee-payroll/employee-payroll';
+import { ManagerDashboard } from '../Dashboards/manager-dashboard/manager-dashboard';
+import { ManagerHome } from '../Components/Manager/manager-home/manager-home';
+import { ManagerTeam } from '../Components/Manager/manager-team/manager-team';
+import { ManagerLeaveApprovals } from '../Components/Manager/manager-leave-approvals/manager-leave-approvals';
+import { ManagerAttendance } from '../Components/Manager/manager-attendance/manager-attendance';
+import { ManagerPayroll } from '../Components/Manager/manager-payroll/manager-payroll';
+import { ManagerMyPortal } from '../Components/Manager/manager-my-portal/manager-my-portal';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -44,4 +51,18 @@ export const routes: Routes = [
     ],
   },
   { path: 'EmployeeDashboard', redirectTo: 'employee', pathMatch: 'full' },
+  { path: 'ManagerDashboard', redirectTo: 'manager', pathMatch: 'full' },
+  {
+    path: 'manager',
+    component: ManagerDashboard,
+    children: [
+      { path: '', redirectTo: 'manager-home', pathMatch: 'full' },
+      { path: 'manager-home', component: ManagerHome },
+      { path: 'team', component: ManagerTeam },
+      { path: 'leave-approvals', component: ManagerLeaveApprovals },
+      { path: 'attendance', component: ManagerAttendance },
+      { path: 'payroll', component: ManagerPayroll },
+      { path: 'my-portal', component: ManagerMyPortal },
+    ],
+  },
 ];

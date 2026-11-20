@@ -41,7 +41,7 @@ export class Login {
           if (userRole === 'ADMIN' || userRole === 'ROLE_ADMIN') {
             this.router.navigate(['/admin']);
           } else if (userRole === 'MANAGER' || userRole === 'ROLE_MANAGER') {
-            this.router.navigate(['/ManagerDashboard']);
+            this.router.navigate(['/manager']);
           } else if (userRole === 'EMPLOYEE' || userRole === 'ROLE_EMPLOYEE') {
             this.router.navigate(['/employee']);
           }

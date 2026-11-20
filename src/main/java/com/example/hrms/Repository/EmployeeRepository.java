@@ -13,7 +13,7 @@ import com.example.hrms.Enums.Role;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
-    // Optional<Employee> findByEmail(String email);
+    Optional<Employee> findByEmail(String email);
 
     boolean existsByEmail(String email);
 
@@ -22,6 +22,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findById(Long id);
 
     List<Employee> findByManager_EmployeeName(String employeeName);
+
+    List<Employee> findByManager_Id(Long managerId);
+
+    List<Employee> findByManager_Email(String email);
 
     @Query("SELECT e FROM Employee e WHERE e.id IN (SELECT u.employeeId FROM User u WHERE u.role = :role)")
     List<Employee> findByRole(Role role);

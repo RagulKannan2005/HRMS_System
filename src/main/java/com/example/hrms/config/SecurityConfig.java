@@ -38,6 +38,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/api/v1/auth/**").permitAll()
                                                 .requestMatchers("/error").permitAll()
+                                                .requestMatchers("/api/v1/admin/departments", "/api/v1/admin/designations", "/api/v1/admin/getleavesbystatus/**")
+                                                .hasAnyRole("ADMIN", "MANAGER")
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                                                 .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")

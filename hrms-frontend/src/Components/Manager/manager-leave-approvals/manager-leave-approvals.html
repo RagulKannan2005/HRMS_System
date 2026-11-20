@@ -1,0 +1,197 @@
+<div class="approvals-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>Team Leave Approvals</h2>
+      <p class="subtitle">Review, verify leave balance, and take actions on team requests</p>
+    </div>
+
+    <!-- Toast Notification -->
+    <div *ngIf="feedbackMessage" class="feedback-toast" [class.error]="feedbackError">
+      {{ feedbackMessage }}
+    </div>
+  </div>
+
+  <!-- Filter & Tab Toolbar -->
+  <div class="toolbar">
+    <div class="tab-group">
+      <button
+        class="tab-btn"
+        [class.active]="selectedTab === 'PENDING'"
+        (click)="onTabChange('PENDING')"
+      >
+        Pending Review
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="selectedTab === 'APPROVED'"
+        (click)="onTabChange('APPROVED')"
+      >
+        Approved
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="selectedTab === 'REJECTED'"
+        (click)="onTabChange('REJECTED')"
+      >
+        Rejected
+      </button>
+    </div>
+
+    <div class="search-input-wrapper">
+      <input
+        type="text"
+        placeholder="Filter by employee name, type, reason..."
+        [(ngModel)]="searchQuery"
+        (input)="applyFilter()"
+      />
+    </div>
+  </div>
+
+  <!-- Split View: Table List on Left + Dynamic Review Card on Right -->
+  <div class="split-layout">
+    <!-- Left Table -->
+    <div class="table-pane">
+      <div *ngIf="isLoading" class="loading-box">
+        <p>Loading leave requests...</p>
+      </div>
+
+      <div *ngIf="!isLoading && filteredLeaves.length === 0" class="empty-box">
+        <p>No {{ selectedTab.toLowerCase() }} leave requests found.</p>
+      </div>
+
+      <div class="table-card" *ngIf="!isLoading && filteredLeaves.length > 0">
+        <table class="leaves-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Leave Type</th>
+              <th>Period</th>
+              <th>Days</th>
+              <th>Applied On</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let leave of filteredLeaves"
+              [class.row-selected]="selectedLeave?.id === leave.id"
+              (click)="selectLeave(leave)"
+            >
+              <td>
+                <span class="emp-name">{{ leave.employeeName || 'ID: ' + leave.employeeId }}</span>
+              </td>
+              <td>
+                <span class="badge-type">{{ leave.leaveType }}</span>
+              </td>
+              <td>
+                <span class="dates-text">{{ leave.fromDate }} &rarr; {{ leave.toDate }}</span>
+              </td>
+              <td>
+                <span class="days-num">{{ leave.numberOfDays }}d</span>
+              </td>
+              <td>
+                <span class="applied-date">{{ leave.appliedOn ? (leave.appliedOn | date: 'mediumDate') : '—' }}</span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="leave.status?.toLowerCase()">
+                  {{ leave.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Review Card -->
+    <div class="review-pane" *ngIf="selectedLeave">
+      <div class="review-card">
+        <div class="review-header">
+          <h3>Request Review</h3>
+          <span class="status-pill" [ngClass]="selectedLeave.status?.toLowerCase()">
+            {{ selectedLeave.status }}
+          </span>
+        </div>
+
+        <div class="applicant-box">
+          <div class="applicant-avatar">
+            {{ (selectedLeave.employeeName || 'E').charAt(0).toUpperCase() }}
+          </div>
+          <div class="applicant-info">
+            <span class="applicant-name">{{ selectedLeave.employeeName || 'ID: ' + selectedLeave.employeeId }}</span>
+            <span class="applicant-sub">Request #{{ selectedLeave.id }} &bull; Applied: {{ selectedLeave.appliedOn | date:'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <div class="review-details">
+          <div class="detail-block">
+            <span class="detail-label">Leave Type</span>
+            <span class="detail-value highlight">{{ selectedLeave.leaveType }}</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Requested Days</span>
+            <span class="detail-value highlight">{{ selectedLeave.numberOfDays }} days</span>
+          </div>
+          <div class="detail-block full-width">
+            <span class="detail-label">Date Range</span>
+            <span class="detail-value">{{ selectedLeave.fromDate }} to {{ selectedLeave.toDate }}</span>
+          </div>
+          <div class="detail-block full-width">
+            <span class="detail-label">Reason</span>
+            <p class="reason-text">{{ selectedLeave.reason || 'No reason provided' }}</p>
+          </div>
+        </div>
+
+        <!-- Balance Insight -->
+        <div class="balance-insight">
+          <h4>Applicant Leave Balance</h4>
+          <div *ngIf="isLoadingBalances" class="balance-loading">Loading balances...</div>
+
+          <div *ngIf="!isLoadingBalances && selectedMemberBalances.length > 0" class="balance-meters">
+            <div
+              class="balance-meter"
+              *ngFor="let b of selectedMemberBalances"
+              [class.focused]="b.leaveType === selectedLeave.leaveType"
+            >
+              <div class="meter-top">
+                <span class="meter-type">{{ b.leaveType }}</span>
+                <span class="meter-count">{{ b.totalDays - b.usedDays }} / {{ b.totalDays }} days remaining</span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  [style.width.%]="((b.totalDays - b.usedDays) / b.totalDays) * 100"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons (Only for PENDING) -->
+        <div class="review-actions" *ngIf="selectedLeave.status === 'PENDING'">
+          <button
+            class="btn-approve"
+            (click)="onApprove(selectedLeave)"
+            [disabled]="isProcessing"
+          >
+            ✓ Approve Request
+          </button>
+          <button
+            class="btn-reject"
+            (click)="onReject(selectedLeave)"
+            [disabled]="isProcessing"
+          >
+            ✕ Reject Request
+          </button>
+        </div>
+
+        <div class="resolved-note" *ngIf="selectedLeave.status !== 'PENDING'">
+          <span *ngIf="selectedLeave.status === 'APPROVED'">✓ This leave was approved</span>
+          <span *ngIf="selectedLeave.status === 'REJECTED'">✕ This leave was rejected</span>
+          <span *ngIf="selectedLeave.status === 'CANCELLED'">— This leave was cancelled</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

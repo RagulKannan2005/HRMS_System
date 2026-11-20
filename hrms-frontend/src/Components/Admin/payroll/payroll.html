@@ -1,120 +1,444 @@
-<!-- <h1>{{username|lowercase}}</h1>
+<div class="admin-payroll-container">
+  <!-- Header Banner -->
+  <div class="page-header">
+    <div>
+      <h2>Payroll & Compensation Management</h2>
+      <p class="subtitle">Configure employee salary structures, process monthly payroll, and review disbursement ledger</p>
+    </div>
 
-<p>{{date|date:'dd-MM-yyyy'}}</p>
-<p>{{salary|currency:'EUR'}}</p>
-<form [formGroup]="payrollForm" (ngSubmit)="submitForm()">
-    <h1>PayRoll Form</h1>
-    <input type="text" formControlName="name" placeholder="Name">
-    @if(payrollForm.get('name')?.touched && payrollForm.get('name')?.hasError('required')){
-      <p>Name is Required</p>
-    }
-    <br>
-    <input type="email" formControlName="email" placeholder="Email">
-    @if(payrollForm.get('email')?.touched && payrollForm.get('email')?.hasError('required')){
-      <p>Email is Required</p>
-    }
-    <br>
-    <input type="number" formControlName="salary" placeholder="Salary">
-    <br>
-    <button type="submit">Submit</button>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="openGenerateModal()">
+        ⚡ Run Monthly Payroll
+      </button>
+      <button class="btn-refresh" (click)="loadAllPayrollData()">
+        ↻ Refresh
+      </button>
+    </div>
+  </div>
 
-    <table border="1" cellpadding="10">
+  <!-- Toast Notification -->
+  <div *ngIf="toastMessage" class="toast-alert" [class.error]="toastError">
+    {{ toastMessage }}
+  </div>
+
+  <!-- Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card green">
+      <span class="metric-label">Total Employees on Payroll</span>
+      <span class="metric-val">{{ totalEmployeesCount }}</span>
+      <span class="metric-sub">Active staff members</span>
+    </div>
+
+    <div class="metric-card blue">
+      <span class="metric-label">Total Monthly Payroll Volume</span>
+      <span class="metric-val">₹{{ totalPayrollBudget | number }}</span>
+      <span class="metric-sub">Aggregate monthly commitment</span>
+    </div>
+
+    <div class="metric-card amber">
+      <span class="metric-label">Average Gross Salary</span>
+      <span class="metric-val">₹{{ avgGrossSalary | number }}</span>
+      <span class="metric-sub">Across all departments</span>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'salaries'"
+      (click)="activeTab = 'salaries'"
+    >
+      💼 Salary Structures & Compensation
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'ledger'"
+      (click)="activeTab = 'ledger'"
+    >
+      📋 Historical Payroll Ledger
+    </button>
+  </div>
+
+  <!-- TAB 1: SALARIES & COMPENSATION -->
+  <div *ngIf="activeTab === 'salaries'">
+    <!-- Search & Filter Bar -->
+    <div class="filter-card">
+      <div class="filter-group">
+        <label>Search Employee</label>
+        <input
+          type="text"
+          placeholder="Name, code, or email..."
+          [(ngModel)]="searchName"
+          (input)="applyFilter()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Filter by Department</label>
+        <input
+          type="text"
+          placeholder="IT, HR, Finance..."
+          [(ngModel)]="searchDepartment"
+          (input)="applyFilter()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Min Gross Salary (₹)</label>
+        <input
+          type="number"
+          placeholder="e.g. 30000"
+          [(ngModel)]="searchMinSalary"
+          (input)="applyFilter()"
+        />
+      </div>
+
+      <button
+        class="btn-reset"
+        (click)="searchName = ''; searchDepartment = ''; searchMinSalary = null; applyFilter()"
+      >
+        Clear Filters
+      </button>
+    </div>
+
+    <!-- Salaries Table -->
+    <div class="table-card">
+      <div *ngIf="isLoading" class="loading-state">
+        <p>Loading salary structures from database...</p>
+      </div>
+
+      <div *ngIf="!isLoading && filteredSalaries.length === 0" class="empty-state">
+        <p>No employee salary structures found matching your filter.</p>
+      </div>
+
+      <table class="payroll-table" *ngIf="!isLoading && filteredSalaries.length > 0">
         <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Salary</th>
-            </tr>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Designation</th>
+            <th>Basic Salary</th>
+            <th>HRA</th>
+            <th>Allowances</th>
+            <th>PF %</th>
+            <th>Tax %</th>
+            <th>Gross Salary</th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody>
-            @for(emp of employeeList; track emp.id){
-                <tr>
-                    <td>{{emp.name}}</td>
-                    <td>{{emp.email}}</td>
-                    <td>{{emp.salary}}</td>
-                </tr>
-            } @empty {
-                <tr>
-                    <td colspan="3">No employee found</td>
-                </tr>
-            }
+          <tr *ngFor="let item of filteredSalaries">
+            <td>
+              <div class="emp-cell">
+                <span class="emp-name">{{ item.employeeName }}</span>
+                <span class="emp-code">{{ item.employeeCode }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="dept-badge">{{ item.departmentName }}</span>
+            </td>
+            <td>{{ item.designationName }}</td>
+            <td>₹{{ item.basicSalary | number }}</td>
+            <td>₹{{ item.hra | number }}</td>
+            <td>₹{{ item.otherAllowance | number }}</td>
+            <td>{{ item.pfPercent }}%</td>
+            <td>{{ item.taxPercent }}%</td>
+            <td>
+              <strong class="gross-salary">₹{{ item.grossSalary | number }}</strong>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button
+                  class="btn-sm edit"
+                  (click)="openEditModal(item)"
+                  title="Edit Salary Structure"
+                >
+                  ✎ Edit
+                </button>
+                <button
+                  class="btn-sm run"
+                  (click)="openGenerateModal(item.employeeId)"
+                  title="Run Payroll for this Employee"
+                >
+                  ⚡ Run
+                </button>
+                <button
+                  class="btn-sm history"
+                  (click)="viewEmployeeHistory(item)"
+                  title="View Historical Payslips"
+                >
+                  📄 Ledger
+                </button>
+              </div>
+            </td>
+          </tr>
         </tbody>
-    </table>
-</form>
+      </table>
+    </div>
+  </div>
 
-  -->
-<!-- 
-<input type="text" [(ngModel)]="searchText" placeholder="Search">
-<button (click)="searchEmployee()">Search</button>
-<br>
-<br>
-<table border="1">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>EmployeeName</th>
-            <th>Department</th>
-        </tr>
-    </thead>
-    <tbody>
-        @for(emp of filterEmployee;track emp.id){
-            <tr>
-                <td>{{emp.id}}</td>
-                <td>{{emp.name}}</td>
-                <td>{{emp.department}}</td>
-            </tr>
-        }
-    </tbody>
-</table> -->
-<!-- <form action="" [formGroup]="employeeform" (ngSubmit)="onSubmit()">
+  <!-- TAB 2: HISTORICAL PAYROLL LEDGER -->
+  <div *ngIf="activeTab === 'ledger'">
+    <div class="ledger-header-box">
+      <div class="select-emp-row">
+        <label>Select Employee to View Ledger:</label>
+        <select
+          [ngModel]="selectedEmployeeHistory?.employeeId"
+          (ngModelChange)="onSelectHistoryEmployee($event)"
+        >
+          <option [ngValue]="null">-- Select Employee --</option>
+          <option *ngFor="let emp of combinedSalaries" [value]="emp.employeeId">
+            {{ emp.employeeName }} ({{ emp.employeeCode }} - {{ emp.departmentName }})
+          </option>
+        </select>
+      </div>
 
-    <h1>Employee Form</h1>
-    <input type="text" formControlName="id" name="" id="">
-    @if(employeeform.get('id')?.touched && employeeform.get('id')?.hasError('required')){
-    <p>id is required</p>
-    }
-    <br>
-    <input type="text" name="" formControlName="name" id="">
-    @if(employeeform.get('name')?.touched && employeeform.get('name')?.hasError('required')){
-    <p>name is required</p>
-    }
-    <br>
-    <input type="text" name="" formControlName="department" id="">
-    @if(employeeform.get('department') && employeeform.get('department')?.hasError('required')){
-    <p>department is required</p>
-    }
-    <br>
-    <button type="submit">Submit</button>
+      <button
+        *ngIf="selectedEmployeeHistory"
+        class="btn-primary"
+        (click)="openGenerateModal(selectedEmployeeHistory.employeeId)"
+      >
+        + Run Payroll for {{ selectedEmployeeHistory.employeeName }}
+      </button>
+    </div>
 
-</form> -->
+    <div class="table-card">
+      <div *ngIf="!selectedEmployeeHistory" class="empty-state">
+        <p>Please select an employee above or click "Ledger" on any employee in the Salary Structures tab.</p>
+      </div>
 
-<input type="text" name="" id="" placeholder="Search by name" [(ngModel)]="searchname">
-<input type="text" placeholder="Search by department" [(ngModel)]="searchdepartment">
-<input type="text" placeholder="Search by minimum salary" [(ngModel)]="searchminsalary">
-<button style="padding: 5px;margin-left: 10px;border-radius: 5px;border: none;"
-    (click)="filteremployees()">search</button>
-<table border="1" cellpadding="10" style="margin-top: 50px;">
-    <thead>
-        <tr>
-            <th>id</th>
-            <th>name</th>
-            <th>department</th>
-            <th>salary</th>
-        </tr>
-    </thead>
-    <tbody>
-        @for(emp of filteremployee; track emp.id){
-        <tr>
-            <td>{{emp.id}}</td>
-            <td>{{emp.name}}</td>
-            <td>{{emp.department}}</td>
-            <td>{{emp.salary}}</td>
-            <!-- <td><button (click)="onEdit(emp.id)">Edit</button><button (click)="onDelete(emp.id)">Delete</button></td> -->
-        </tr>
-        }@empty{
-        <tr>
-            <td colspan="4">No employee found</td>
-        </tr>
-        }
-    </tbody>
-</table>
+      <div *ngIf="selectedEmployeeHistory && isLoadingHistory" class="loading-state">
+        <p>Loading historical payroll records for {{ selectedEmployeeHistory.employeeName }}...</p>
+      </div>
+
+      <div
+        *ngIf="selectedEmployeeHistory && !isLoadingHistory && employeePayrolls.length === 0"
+        class="empty-state"
+      >
+        <p>No processed payroll records found for {{ selectedEmployeeHistory.employeeName }}.</p>
+        <button
+          class="btn-primary"
+          style="margin-top: 10px;"
+          (click)="openGenerateModal(selectedEmployeeHistory.employeeId)"
+        >
+          Generate First Payroll
+        </button>
+      </div>
+
+      <table
+        class="payroll-table"
+        *ngIf="selectedEmployeeHistory && !isLoadingHistory && employeePayrolls.length > 0"
+      >
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Employee</th>
+            <th>Gross Salary</th>
+            <th>PF Deduction</th>
+            <th>Tax</th>
+            <th>Leave Deductions</th>
+            <th>Total Deductions</th>
+            <th>Net Take-Home</th>
+            <th>Processed On</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of employeePayrolls">
+            <td>
+              <strong class="period-pill">{{ getMonthName(p.month) }} {{ p.year }}</strong>
+            </td>
+            <td>{{ p.employeeName }}</td>
+            <td>₹{{ p.grossSalary | number }}</td>
+            <td>-₹{{ p.pf | number }}</td>
+            <td>-₹{{ p.tax | number }}</td>
+            <td>-₹{{ p.leaveDeduction | number }}</td>
+            <td class="ded-val">-₹{{ p.totalDeduction | number }}</td>
+            <td>
+              <span class="net-pill">₹{{ p.netSalary | number }}</span>
+            </td>
+            <td>{{ p.processedAt | date: 'mediumDate' }}</td>
+            <td>
+              <button class="btn-sm slip" (click)="openPayslipModal(p)">
+                View Slip
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Generate Payroll -->
+  <div class="modal-backdrop" *ngIf="showGenerateModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Run Monthly Payroll</h3>
+        <button class="btn-close" (click)="closeGenerateModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="onSubmitGenerate()">
+          <div class="form-group">
+            <label>Employee *</label>
+            <select [(ngModel)]="targetEmployeeId" name="targetEmployeeId" required>
+              <option *ngFor="let e of combinedSalaries" [value]="e.employeeId">
+                {{ e.employeeName }} ({{ e.employeeCode }} - {{ e.departmentName }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payroll Month *</label>
+              <select [(ngModel)]="targetMonth" name="targetMonth">
+                <option *ngFor="let m of months" [value]="m.value">{{ m.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Payroll Year *</label>
+              <input type="number" [(ngModel)]="targetYear" name="targetYear" />
+            </div>
+          </div>
+
+          <div class="info-callout">
+            <span>ℹ️ System computes attendance deductions (unapproved absences), PF, and Tax automatically from attendance database.</span>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeGenerateModal()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="isGenerating || !targetEmployeeId">
+              {{ isGenerating ? 'Processing...' : 'Process & Generate' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Edit Salary Structure -->
+  <div class="modal-backdrop" *ngIf="showEditModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Salary Structure: {{ editSalaryForm.employeeName }}</h3>
+        <button class="btn-close" (click)="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="onSubmitEditSalary()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Basic Salary (₹) *</label>
+              <input type="number" [(ngModel)]="editSalaryForm.basicSalary" name="basicSalary" required />
+            </div>
+            <div class="form-group">
+              <label>HRA (₹) *</label>
+              <input type="number" [(ngModel)]="editSalaryForm.hra" name="hra" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Other Allowances (₹)</label>
+              <input type="number" [(ngModel)]="editSalaryForm.otherAllowance" name="otherAllowance" />
+            </div>
+            <div class="form-group">
+              <label>Total Gross: ₹{{ (editSalaryForm.basicSalary + editSalaryForm.hra + (editSalaryForm.otherAllowance || 0)) | number }}</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>PF Deduction (%) *</label>
+              <input type="number" [(ngModel)]="editSalaryForm.pfPercent" name="pfPercent" required />
+            </div>
+            <div class="form-group">
+              <label>Tax Deduction (%) *</label>
+              <input type="number" [(ngModel)]="editSalaryForm.taxPercent" name="taxPercent" required />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="isUpdatingSalary">
+              {{ isUpdatingSalary ? 'Saving...' : 'Update Salary' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Printable Official Payslip -->
+  <div class="modal-backdrop" *ngIf="showPayslipModal && selectedPayslip">
+    <div class="payslip-modal-card">
+      <div class="modal-top-bar">
+        <h3>Salary Statement Voucher</h3>
+        <div class="modal-bar-actions">
+          <button class="btn-print" (click)="printPayslip()">🖨️ Print Payslip</button>
+          <button class="btn-modal-close" (click)="closePayslipModal()">&times;</button>
+        </div>
+      </div>
+
+      <div class="payslip-content">
+        <div class="slip-header">
+          <div class="company-brand">
+            <h2>HRMS ENTERPRISE</h2>
+            <span>Confidential Employee Salary Statement</span>
+          </div>
+          <div class="slip-period">
+            <span class="month-label">{{ getMonthName(selectedPayslip.month) }} {{ selectedPayslip.year }}</span>
+            <span class="proc-date">Generated: {{ selectedPayslip.processedAt | date: 'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <div class="slip-emp-info">
+          <div>
+            <span class="lbl">Employee:</span>
+            <strong>{{ selectedPayslip.employeeName }}</strong>
+          </div>
+          <div>
+            <span class="lbl">Voucher ID:</span>
+            <strong>#PAY-{{ selectedPayslip.id }}</strong>
+          </div>
+        </div>
+
+        <div class="breakdown-grid">
+          <!-- Earnings -->
+          <div class="breakdown-col earnings">
+            <h4>Gross Earnings</h4>
+            <div class="calc-row">
+              <span>Gross Salary:</span>
+              <strong>₹{{ selectedPayslip.grossSalary | number }}</strong>
+            </div>
+          </div>
+
+          <!-- Deductions -->
+          <div class="breakdown-col deductions">
+            <h4>Deductions Applied</h4>
+            <div class="calc-row">
+              <span>Provident Fund (PF):</span>
+              <span>-₹{{ selectedPayslip.pf | number }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Income Tax (TDS):</span>
+              <span>-₹{{ selectedPayslip.tax | number }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Absent Leave Deductions:</span>
+              <span>-₹{{ selectedPayslip.leaveDeduction | number }}</span>
+            </div>
+            <div class="calc-row total-ded">
+              <span>Total Deductions:</span>
+              <strong>-₹{{ selectedPayslip.totalDeduction | number }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="net-pay-banner">
+          <span>NET DISBURSED AMOUNT</span>
+          <h2>₹{{ selectedPayslip.netSalary | number }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

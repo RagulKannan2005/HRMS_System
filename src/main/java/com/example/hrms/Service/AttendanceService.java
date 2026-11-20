@@ -18,6 +18,7 @@ import com.example.hrms.Enums.LeaveStatus;
 import com.example.hrms.Repository.AttendanceRepository;
 import com.example.hrms.Repository.EmployeeRepository;
 import com.example.hrms.Repository.LeaveRequestRepository;
+import com.example.hrms.Repository.UserRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,26 @@ public class AttendanceService {
     private final AttendanceRepository attendancerepo;
     private final EmployeeRepository employeerepo;
     private final LeaveRequestRepository leaveRequestrepo;
+    private final UserRepository userrepo;
+
+    private Employee getAuthenticatedEmployee(User user) {
+        if (user.getEmployeeId() != null) {
+            Optional<Employee> emp = employeerepo.findById(user.getEmployeeId());
+            if (emp.isPresent()) {
+                return emp.get();
+            }
+        }
+        // Fallback: look up by user's email
+        Employee emp = employeerepo.findByEmail(user.getEmail())
+                .orElseThrow(() -> new RuntimeException("No employee profile found for account: " + user.getEmail()
+                        + ". Please log in with a registered employee account."));
+        // Self-heal: link user entity with the found employeeId
+        try {
+            user.setEmployeeId(emp.getId());
+            userrepo.save(user);
+        } catch (Exception ignored) {}
+        return emp;
+    }
 
     // public AttendanceResponseDto markAttendance(AttendanceRequestDto request) {
     // Authentication authentication =
@@ -88,15 +109,8 @@ public class AttendanceService {
     public AttendanceResponseDto checkIn() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
-
-        if (employeeId == null) {
-            throw new RuntimeException("Employee not found");
-
-        }
-
-        Employee employee = employeerepo.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
         LocalDate today = LocalDate.now();
 
@@ -129,12 +143,9 @@ public class AttendanceService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
-        if (employeeId == null) {
-            throw new RuntimeException("Employee not found");
-
-        }
         LocalDate today = LocalDate.now();
 
         Attendance attendance = attendancerepo.findByEmployee_IdAndDate(employeeId, today)
@@ -147,15 +158,12 @@ public class AttendanceService {
 
         attendance.setCheckout(chechoutTime);
 
-        long totalMinutes = Duration.between(attendance.getCheckin(), chechoutTime).toMinutes();
+        long totalMinutes = Math.max(0, Duration.between(attendance.getCheckin(), chechoutTime).toMinutes());
 
-        int breakMinutes = 60;
+        int breakMinutes = totalMinutes >= 60 ? 60 : 0;
 
-        int workMinutes = (int) totalMinutes - breakMinutes;
-        if(workMinutes<0){
-            throw new RuntimeException("Break time is greater than work time");  
-        }
-        int standardWorkMinutes=8*60;
+        int workMinutes = (int) Math.max(0, totalMinutes - breakMinutes);
+        int standardWorkMinutes = 8 * 60;
 
         int overtimeMinutes=Math.max(0,workMinutes-standardWorkMinutes);
 
@@ -181,11 +189,8 @@ public class AttendanceService {
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
-
-        if (employeeId == null) {
-            throw new RuntimeException("Employee not found");
-        }
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
         List<Attendance> attendances = attendancerepo.findAllByEmployee_IdAndDate(employeeId, date);
         return attendances.stream().map(this::convertToResponseDto).collect(Collectors.toList());
@@ -196,11 +201,9 @@ public class AttendanceService {
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
-        if (employeeId == null) {
-            throw new RuntimeException("Employee not found");
-        }
         int year = date.getYear();
         int month = date.getMonthValue();
 

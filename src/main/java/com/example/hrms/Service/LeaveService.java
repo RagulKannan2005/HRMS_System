@@ -3,6 +3,7 @@ package com.example.hrms.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import com.example.hrms.Repository.AttendanceRepository;
 import com.example.hrms.Repository.EmployeeRepository;
 import com.example.hrms.Repository.LeaveBalanceRepository;
 import com.example.hrms.Repository.LeaveRequestRepository;
+import com.example.hrms.Repository.UserRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,24 @@ public class LeaveService {
     private final LeaveRequestRepository leaveRequestrepo;
     private final EmployeeRepository employeeRepo;
     private final AttendanceRepository attendanceRepository;
+    private final UserRepository userrepo;
+
+    private Employee getAuthenticatedEmployee(User user) {
+        if (user.getEmployeeId() != null) {
+            Optional<Employee> emp = employeeRepo.findById(user.getEmployeeId());
+            if (emp.isPresent()) {
+                return emp.get();
+            }
+        }
+        Employee emp = employeeRepo.findByEmail(user.getEmail())
+                .orElseThrow(() -> new RuntimeException("No employee profile found for account: " + user.getEmail()
+                        + ". Please log in with a registered employee account."));
+        try {
+            user.setEmployeeId(emp.getId());
+            userrepo.save(user);
+        } catch (Exception ignored) {}
+        return emp;
+    }
 
     @Transactional
     public LeaveResponseDto applyLeave(LeaveRequestDto dto) {
@@ -42,15 +62,8 @@ public class LeaveService {
         }
 
         User user = (User) authentication.getPrincipal();
-
-        Long employeeId = user.getEmployeeId();
-
-        if (employeeId == null) {
-            throw new RuntimeException("Invalid user session");
-
-        }
-        Employee employee = employeeRepo.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
         if (dto.getFromDate().isAfter(dto.getToDate())) {
             throw new RuntimeException("From date cannnot be after To date");
@@ -111,12 +124,13 @@ public class LeaveService {
         }
 
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
         LeaveRequest leaveRequest = leaveRequestrepo.findById(leaveRequestId)
                 .orElseThrow(() -> new RuntimeException("Leave request not found"));
 
-        if (employeeId == null || !leaveRequest.getEmployee().getId().equals(employeeId)) {
+        if (!leaveRequest.getEmployee().getId().equals(employeeId)) {
             throw new RuntimeException("You can only cancel your own leave request");
         }
 
@@ -158,11 +172,8 @@ public class LeaveService {
         }
 
         User user = (User) authentication.getPrincipal();
-        Long employeeId = user.getEmployeeId();
-
-        if (employeeId == null) {
-            throw new RuntimeException("No employee profile associated with current user");
-        }
+        Employee employee = getAuthenticatedEmployee(user);
+        Long employeeId = employee.getId();
 
         List<LeaveRequest> leaveRequests = leaveRequestrepo.findByEmployee_Id(employeeId);
         return leaveRequests.stream()

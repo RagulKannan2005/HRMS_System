@@ -9,24 +9,32 @@
 
   <section class="filters" aria-label="Filter leave requests">
     <label class="search-field" for="employee-search">
-      <span class="sr-only">Search by employee ID</span>
-      <input id="employee-search" type="search" placeholder="Search by employee ID" />
+      <span class="sr-only">Search by employee name or ID</span>
+      <input
+        id="employee-search"
+        type="search"
+        placeholder="Search by employee name or ID"
+        [value]="searchTerm"
+        (input)="onSearchChange($event)"
+      />
     </label>
 
     <label class="sr-only" for="leave-type-filter">Filter by leave type</label>
-    <select id="leave-type-filter">
+    <select id="leave-type-filter" (change)="onLeaveTypeChange($event)">
       <option value="">All leave types</option>
-      <option value="sick">Sick leave</option>
       <option value="casual">Casual leave</option>
+      <option value="sick">Sick leave</option>
       <option value="earned">Earned leave</option>
+      <option value="maternity">Maternity leave</option>
     </select>
 
     <label class="sr-only" for="status-filter">Filter by status</label>
     <select id="status-filter" (change)="filteredLeves($event)">
-      <option value="">All statuses</option>
+      <option value="">All pending requests</option>
       <option value="pending">Pending</option>
       <option value="approved">Approved</option>
       <option value="rejected">Rejected</option>
+      <option value="cancelled">Cancelled</option>
     </select>
   </section>
 
@@ -37,7 +45,7 @@
           <h2 id="requests-title">Leave requests</h2>
           <p>Review submitted applications and their current status.</p>
         </div>
-        <span class="request-count">1 request</span>
+        <span class="request-count">{{ leaveList.length }} request{{ leaveList.length === 1 ? '' : 's' }}</span>
       </div>
 
       <div class="table-scroll">
@@ -55,34 +63,41 @@
           </thead>
           <tbody>
             @for(item of leaveList; track item.id){
-            <tr>
+            <tr
+              class="clickable-row"
+              [class.selected-row]="selectedLeave?.id === item.id"
+              (click)="selectLeave(item)"
+            >
               <td>
                 <div class="employee-cell">
-                  <span class="employee-avatar" aria-hidden="true">RK</span>
+                  <span class="employee-avatar" aria-hidden="true">{{ getInitials(item.employeeName || item.managerName) }}</span>
                   <span>
-                    <strong>{{item.employeeName||item.managerName||'Manager'}}</strong>
-                    <small>{{item.employeeId||item.managerId||''}}</small>
+                    <strong>{{ item.employeeName || item.managerName || 'Employee' }}</strong>
+                    <small>ID: {{ item.employeeId || item.managerId || item.id }}</small>
                   </span>
                 </div>
               </td>
-              <td>{{item.leaveType}}</td>
-              <td>{{item.fromDate ||item.startDate }}-{{item.toDate||item.endDate}}</td>
-              <td>{{item.noofdays}}</td>
-              <td><span class="status-badge pending">{{item.status}}</span></td>
+              <td>{{ item.leaveType }}</td>
+              <td>{{ item.fromDate || item.startDate }} - {{ item.toDate || item.endDate }}</td>
+              <td>{{ item.numberOfDays || item.noofdays || 1 }}</td>
               <td>
-                @if(item.status!='APPROVED'){
-
-                <div class="row-actions" aria-label="Actions for Ragul Kannan's request">
+                <span class="status-badge" [ngClass]="item.status?.toLowerCase()">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td>
+                @if(item.status === 'PENDING'){
+                <div class="row-actions" (click)="$event.stopPropagation()">
                   <button class="approve-button" type="button" (click)="onApproveLeave(item.id)">Approve</button>
                   <button class="reject-button" type="button" (click)="onRejectLeave(item.id)">Reject</button>
                 </div>
-              }
+                }
               </td>
-              
             </tr>
             }@empty{
             <tr>
-              <td colspan="6" style="text-align: center;color: #94a3b8;padding: 24px;">no Pending manager leave request.
+              <td colspan="6" style="text-align: center; color: #94a3b8; padding: 32px;">
+                No leave requests found matching the current filters.
               </td>
             </tr>
             }
@@ -91,46 +106,85 @@
       </div>
     </section>
 
+    <!-- Dynamic Request Review Card -->
     <aside class="request-card" aria-labelledby="request-details-title">
       <div class="card-heading details-heading">
         <div>
           <p class="eyebrow">REQUEST REVIEW</p>
           <h2 id="request-details-title">Request details</h2>
         </div>
-        <span class="status-badge pending">Pending</span>
+        <span
+          *ngIf="selectedLeave"
+          class="status-badge"
+          [ngClass]="selectedLeave.status?.toLowerCase()"
+        >
+          {{ selectedLeave.status }}
+        </span>
       </div>
 
-      <div class="employee-summary">
-        <span class="employee-avatar large" aria-hidden="true">RK</span>
-        <div>
-          <h3>Ragul Kannan</h3>
-          <p>Employee ID · 1</p>
+      <div *ngIf="selectedLeave; else noSelection">
+        <div class="employee-summary">
+          <span class="employee-avatar large" aria-hidden="true">
+            {{ getInitials(selectedLeave.employeeName || selectedLeave.managerName) }}
+          </span>
+          <div>
+            <h3>{{ selectedLeave.employeeName || selectedLeave.managerName || 'Employee' }}</h3>
+            <p>Employee ID · {{ selectedLeave.employeeId || selectedLeave.managerId || selectedLeave.id }}</p>
+          </div>
+        </div>
+
+        <dl class="request-info">
+          <div>
+            <dt>Leave type</dt>
+            <dd>{{ selectedLeave.leaveType }}</dd>
+          </div>
+          <div>
+            <dt>Duration</dt>
+            <dd>{{ selectedLeave.fromDate || selectedLeave.startDate }} – {{ selectedLeave.toDate || selectedLeave.endDate }}</dd>
+          </div>
+          <div>
+            <dt>Number of days</dt>
+            <dd>{{ selectedLeave.numberOfDays || selectedLeave.noofdays || 1 }} day(s)</dd>
+          </div>
+          <div>
+            <dt>Reason</dt>
+            <dd>{{ selectedLeave.reason || 'No reason specified' }}</dd>
+          </div>
+          <div *ngIf="selectedLeave.appliedOn">
+            <dt>Applied on</dt>
+            <dd>{{ selectedLeave.appliedOn | date:'mediumDate' }}</dd>
+          </div>
+        </dl>
+
+        <div class="decision-actions" *ngIf="selectedLeave.status === 'PENDING'">
+          <button class="approve-button" type="button" (click)="onApproveLeave(selectedLeave.id)">
+            Approve request
+          </button>
+          <button class="reject-button" type="button" (click)="onRejectLeave(selectedLeave.id)">
+            Reject request
+          </button>
+        </div>
+
+        <div class="status-summary-box" *ngIf="selectedLeave.status !== 'PENDING'">
+          <span *ngIf="selectedLeave.status === 'APPROVED'" class="status-text approved">
+            ✅ This request has been approved.
+          </span>
+          <span *ngIf="selectedLeave.status === 'REJECTED'" class="status-text rejected">
+            ❌ This request has been rejected.
+          </span>
+          <span *ngIf="selectedLeave.status === 'CANCELLED'" class="status-text cancelled">
+            ℹ️ This request was cancelled.
+          </span>
         </div>
       </div>
 
-      <dl class="request-info">
-        <div>
-          <dt>Leave type</dt>
-          <dd>Sick leave</dd>
+      <ng-template #noSelection>
+        <div class="empty-review">
+          <span class="empty-icon">📋</span>
+          <h3>No Request Selected</h3>
+          <p>Click on any leave request from the list to view its complete details and take action.</p>
         </div>
-        <div>
-          <dt>Duration</dt>
-          <dd>Oct 1 – Oct 3, 2023</dd>
-        </div>
-        <div>
-          <dt>Number of days</dt>
-          <dd>3 days</dd>
-        </div>
-        <div>
-          <dt>Reason</dt>
-          <dd>Feeling unwell and need rest.</dd>
-        </div>
-      </dl>
-
-      <div class="decision-actions">
-        <button class="approve-button" type="button">Approve request</button>
-        <button class="reject-button" type="button">Reject request</button>
-      </div>
+      </ng-template>
     </aside>
   </div>
 </section>

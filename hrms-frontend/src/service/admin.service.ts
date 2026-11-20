@@ -68,4 +68,36 @@ export class AdminService {
       `${this.adminApi}/getleavesbystatus/${status}`
     );
   }
+
+  // --- Payroll & Salary Endpoints ---
+  getAllSalaries(): Observable<any[]> {
+    return this.http.get<any[]>('http://localhost:8081/api/v1/employee/employeesalary/getAllEmployeeSalary');
+  }
+
+  getSalaryByEmployeeId(employeeId: number): Observable<any> {
+    return this.http.get<any>(`http://localhost:8081/api/v1/employee/employeesalary/getsalaryByEmployeeId/${employeeId}`);
+  }
+
+  updateEmployeeSalary(salaryId: number, salaryData: any): Observable<any> {
+    return this.http.put<any>(
+      `http://localhost:8081/api/v1/employee/employeesalary/updateEmployeeSalary/${salaryId}`,
+      salaryData
+    );
+  }
+
+  generatePayroll(employeeId: number, year: number, month: number): Observable<any> {
+    return this.http.post<any>(
+      'http://localhost:8081/api/v1/payroll/employee/generate',
+      {},
+      {
+        params: { employeeId, year, month },
+      }
+    );
+  }
+
+  getPayrollByEmployeeId(employeeId: number): Observable<any[]> {
+    return this.http.get<any[]>('http://localhost:8081/api/v1/payroll/employee/id', {
+      params: { employeeId },
+    });
+  }
 }
