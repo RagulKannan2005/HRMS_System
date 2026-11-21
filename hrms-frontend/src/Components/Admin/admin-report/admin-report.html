@@ -1,0 +1,53 @@
+<form [formGroup]="loginData" (ngSubmit)="submitForm()">
+  <input type="email" formControlName="email" placeholder="Enter email">
+  
+  @if (loginData.get('email')?.touched && loginData.get('email')?.hasError('required')) {
+    <p style="color: red;">Email is required</p>
+  }
+  @if (loginData.get('email')?.touched && loginData.get('email')?.hasError('email')) {
+    <p style="color: red;">Enter a valid email address</p>
+  }
+
+  <br>
+  <input type="password" formControlName="password" placeholder="Enter password">
+  
+  @if (loginData.get('password')?.touched && loginData.get('password')?.hasError('required')) {
+    <p style="color: red;">Password is required</p>
+  }
+
+  <br>
+  <button type="submit" style="margin-bottom: 20px;">Submit</button>
+</form>
+
+<input
+  type="text"
+  placeholder="Search by email..."
+  [(ngModel)]="search"
+  (ngModelChange)="showEmployee()"
+>
+<br><br>
+
+<button (click)="showForm()">{{ show ? 'Hide' : 'Show' }} Employee Data</button>
+
+@if (show) {
+  <table border="1" style="margin-top: 15px; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="padding: 6px 12px;">Email</th>
+        <th style="padding: 6px 12px;">Password</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (emp of filteredEmployees; track $index) {
+        <tr>
+          <td style="padding: 6px 12px;">{{ emp.email }}</td>
+          <td style="padding: 6px 12px;">{{ emp.password }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="2" style="padding: 10px; text-align: center;">No records found</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
